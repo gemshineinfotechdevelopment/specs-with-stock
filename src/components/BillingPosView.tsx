@@ -94,11 +94,9 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
 
   const activeCustomer = customers.find((c) => c.id === selectedCustomerId);
 
-  // Payment & Order Status
+  // Payment & Staff Discount
   const [extraBillDiscount, setExtraBillDiscount] = useState<number>(0);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('UPI / QR');
-  const [orderStatus, setOrderStatus] = useState<OrderStatus>('Completed');
-  const [advancePaidInput, setAdvancePaidInput] = useState<string>('');
   const [staffName, setStaffName] = useState<string>('Suresh K.');
 
   // Sync customer details when customer switches
@@ -157,10 +155,6 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
         },
       ];
     });
-
-    if (product.category === 'Power Glasses') {
-      setOrderStatus('Lab Fitting');
-    }
   };
 
   const updateCartQty = (productId: string, delta: number) => {
@@ -235,13 +229,6 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
     };
   }, [cart, extraBillDiscount]);
 
-  const parsedAdvance =
-    advancePaidInput.trim() === ''
-      ? calculations.grandTotal
-      : Math.min(calculations.grandTotal, Math.max(0, Number(advancePaidInput) || 0));
-
-  const balanceDue = Math.max(0, calculations.grandTotal - parsedAdvance);
-
   const fmt = (val: number) =>
     `${settings.currencySymbol}${val.toLocaleString('en-IN', {
       maximumFractionDigits: 0,
@@ -258,12 +245,6 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
         : cleanDigits
         ? `+91 ${cleanDigits}`
         : '+91 90000 00000';
-
-    const deliveryDate = new Date(
-      Date.now() + settings.defaultLabDays * 24 * 60 * 60 * 1000
-    )
-      .toISOString()
-      .slice(0, 10);
 
     const isExisting =
       selectedCustomerId &&
@@ -296,11 +277,11 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
         cgstAmount: calculations.cgst,
         sgstAmount: calculations.sgst,
         grandTotal: calculations.grandTotal,
-        amountPaid: parsedAdvance,
-        balanceDue,
+        amountPaid: calculations.grandTotal,
+        balanceDue: 0,
         paymentMethod,
-        orderStatus,
-        deliveryDate: orderStatus !== 'Completed' ? deliveryDate : undefined,
+        orderStatus: 'Completed',
+        deliveryDate: undefined,
         staffName,
       },
       !isExisting
@@ -315,7 +296,6 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
     // Clear cart after billing
     setCart([]);
     setExtraBillDiscount(0);
-    setAdvancePaidInput('');
   };
 
   const categories: (EyewearCategory | 'All')[] = [
@@ -822,72 +802,39 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
               )}
             </div>
 
-            {/* 4. Payment Mode, Order Stage & Discount */}
-            <div className="space-y-3 pb-4 border-b border-slate-200">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">
-                    Staff Discount ({settings.currencySymbol})
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={extraBillDiscount || ''}
-                    onChange={(e) => setExtraBillDiscount(Math.max(0, Number(e.target.value) || 0))}
-                    placeholder="000"
-                    className="w-full px-3 py-2 text-sm font-mono bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-slate-900"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">
-                    Advance / Paid Now ({settings.currencySymbol})
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    max={calculations.grandTotal}
-                    value={advancePaidInput}
-                    onChange={(e) => setAdvancePaidInput(e.target.value)}
-                    placeholder="000"
-                    className="w-full px-3 py-2 text-sm font-mono bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-slate-900"
-                  />
-                </div>
+            {/* 3. Payment Mode & Staff Discount */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-4 border-b border-slate-200">
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">
+                  Staff Discount ({settings.currencySymbol})
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  value={extraBillDiscount || ''}
+                  onChange={(e) => setExtraBillDiscount(Math.max(0, Number(e.target.value) || 0))}
+                  placeholder="000"
+                  className="w-full px-3 py-2 text-sm font-mono bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-slate-900"
+                />
               </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">
-                    Payment Method
-                  </label>
-                  <select
-                    value={paymentMethod}
-                    onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-                    className="w-full px-3 py-2 text-xs font-medium bg-slate-50 border border-slate-200 rounded-lg"
-                  >
-                    <option value="UPI / QR">UPI / QR Scan</option>
-                    <option value="Card">Credit / Debit Card</option>
-                    <option value="Cash">Cash Counter</option>
-                    <option value="Split Payment">Split Payment</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">
-                    Order Handover Status
-                  </label>
-                  <select
-                    value={orderStatus}
-                    onChange={(e) => setOrderStatus(e.target.value as OrderStatus)}
-                    className="w-full px-3 py-2 text-xs font-medium bg-slate-50 border border-slate-200 rounded-lg"
-                  >
-                    <option value="Completed">Instant Counter Delivery</option>
-                    <option value="Lab Fitting">Send to Optical Lab</option>
-                    <option value="Ready for Pickup">Ready for Pickup</option>
-                  </select>
-                </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">
+                  Payment Method
+                </label>
+                <select
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
+                  className="w-full px-3 py-2 text-xs font-medium bg-slate-50 border border-slate-200 rounded-lg"
+                >
+                  <option value="UPI / QR">UPI / QR Scan</option>
+                  <option value="Card">Credit / Debit Card</option>
+                  <option value="Cash">Cash Counter</option>
+                  <option value="Split Payment">Split Payment</option>
+                </select>
               </div>
             </div>
 
-            {/* 5. Bill Summary & Complete CTA */}
+            {/* 4. Bill Summary & Complete CTA */}
             <div className="space-y-2 text-sm">
               <div className="flex justify-between text-slate-600 text-xs">
                 <span>Subtotal (Frames + Lenses)</span>
@@ -914,32 +861,6 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
               <div className="flex justify-between text-lg font-bold text-slate-900 pt-2 border-t border-slate-200">
                 <span>Grand Total</span>
                 <span className="font-mono">{fmt(calculations.grandTotal)}</span>
-              </div>
-
-              {/* Advance Paid & Balance Due Breakdown */}
-              <div className="p-3.5 bg-amber-50/90 border border-amber-300/80 rounded-xl space-y-2 mt-2">
-                <div className="flex justify-between text-xs text-slate-700 font-medium">
-                  <span>Advance Paid:</span>
-                  <span className="font-mono font-bold text-emerald-700">{fmt(parsedAdvance)}</span>
-                </div>
-                <div className="flex justify-between items-center text-sm font-bold text-slate-900 pt-1 border-t border-amber-200">
-                  <span className="text-amber-950">Balance Due to Pay:</span>
-                  <span className="font-mono text-base font-extrabold text-rose-700">
-                    {fmt(balanceDue)}
-                  </span>
-                </div>
-                {balanceDue > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAdvancePaidInput(String(calculations.grandTotal));
-                      setOrderStatus('Completed');
-                    }}
-                    className="w-full mt-1.5 py-2 px-3 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors cursor-pointer text-center"
-                  >
-                    Collect Full Balance ({fmt(balanceDue)}) Now
-                  </button>
-                )}
               </div>
 
               <button
