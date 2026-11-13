@@ -77,7 +77,9 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
   });
 
   // POS Page Tabs: 'catalog' (products table) vs 'bill' (the marked counter bill & checkout tab)
-  const [posTab, setPosTab] = useState<'catalog' | 'bill'>('catalog');
+  const [posTab, setPosTab] = useState<'catalog' | 'bill'>(() => {
+    return preselectedCustomerId ? 'bill' : 'catalog';
+  });
 
   // Check if active customer has a pending eye test order / lab fitting invoice
   const activeLabInvoice = useMemo(() => {
@@ -89,10 +91,52 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
     );
   }, [invoices, selectedCustomerId]);
 
-  // Cart starts strictly empty — products are only added when user clicks Add from catalog!
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const convertInvoiceItemsToCart = (inv: SalesInvoice): CartItem[] => {
+    if (!inv || !inv.items || inv.items.length === 0) return [];
+    return inv.items.map((item) => {
+      const matchingProd = products.find((p) => p.id === item.productId);
+      const prod: Product = matchingProd || {
+        id: item.productId || 'rx-lab-lens',
+        sku: item.sku || 'RX-LAB',
+        name: item.name || 'Rx Lab Order - Prescription Fitting',
+        category: (item.category as EyewearCategory) || 'Power Glasses',
+        brand: 'House Brand',
+        frameMaterial: 'Standard',
+        frameShape: 'Standard',
+        lensFeature: item.lensUpgradeLabel || 'Prescription Lenses',
+        price: item.unitPrice || Math.round(item.lineTotal / (item.quantity || 1)),
+        costPrice: 0,
+        gstRate: item.gstRate !== undefined ? item.gstRate : (settings.defaultGstRate || 12),
+        stock: 999,
+        reorderLevel: 0,
+        hsnCode: item.hsnCode || '90031100',
+        imageUrl: '',
+      };
+      return {
+        product: prod,
+        quantity: item.quantity || 1,
+        lensUpgradeLabel: item.lensUpgradeLabel || 'Standard Included Lens',
+        lensUpgradePrice: item.lensUpgradePrice || 0,
+        itemDiscount: item.discount || 0,
+      };
+    });
+  };
+
+  // If preselectedCustomerId is passed from "Load into Billing POS", load the eye test order items into cart!
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    if (preselectedCustomerId && invoices) {
+      const labInv = invoices.find(
+        (inv) => inv.customerId === preselectedCustomerId && inv.orderStatus === 'Lab Fitting'
+      );
+      if (labInv && labInv.items && labInv.items.length > 0) {
+        return convertInvoiceItemsToCart(labInv);
+      }
+    }
+    return [];
+  });
 
   const activeCustomer = customers.find((c) => c.id === selectedCustomerId);
+  const activePrescription = activeCustomer?.prescription || activeLabInvoice?.prescription;
 
   // Payment & Staff Discount
   const [extraBillDiscount, setExtraBillDiscount] = useState<number>(0);
@@ -106,6 +150,12 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
     if (found) {
       setCustomerName(found.name);
       setCustomerPhone(found.phone.replace(/\D/g, '').slice(-10));
+    }
+    const labInv = invoices?.find(
+      (inv) => inv.customerId === custId && inv.orderStatus === 'Lab Fitting'
+    );
+    if (labInv && labInv.items && labInv.items.length > 0) {
+      setCart(convertInvoiceItemsToCart(labInv));
     }
   };
 
@@ -699,6 +749,80 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
               </div>
             )}
 
+            {/* Prescribed Eyeglass & Optometry Powers (OD / OS) Card */}
+            {activePrescription && (
+              <div className="p-4 bg-blue-50/80 border border-blue-200 rounded-xl space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                  <div className="flex items-center gap-2">
+                    <Glasses className="w-4 h-4 text-blue-700" />
+                    <span className="text-xs font-bold text-blue-950 uppercase tracking-wider">
+                      Prescribed Eyeglass & Lens Powers
+                    </span>
+                  </div>
+                  <div className="text-xs font-mono font-semibold text-blue-900">
+                    Lens: <span className="font-bold underline">{activePrescription.lensType}</span> · PD: {activePrescription.pd} mm
+                  </div>
+                </div>
+
+                {/* OD / OS Table */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs font-mono bg-white border border-blue-200 rounded-lg overflow-hidden">
+                    <thead>
+                      <tr className="bg-blue-100/70 text-blue-900 border-b border-blue-200 font-bold">
+                        <th className="py-2 px-3 text-left font-sans">Eye</th>
+                        <th className="py-2 px-3 text-right">SPH</th>
+                        <th className="py-2 px-3 text-right">CYL</th>
+                        <th className="py-2 px-3 text-right">AXIS</th>
+                        <th className="py-2 px-3 text-right">ADD</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-blue-100 text-slate-800">
+                      <tr>
+                        <td className="py-2 px-3 font-sans font-bold text-blue-950">
+                          Right Eye (OD)
+                        </td>
+                        <td className="py-2 px-3 text-right font-bold text-slate-900">
+                          {activePrescription.rightEye.sph}
+                        </td>
+                        <td className="py-2 px-3 text-right">
+                          {activePrescription.rightEye.cyl}
+                        </td>
+                        <td className="py-2 px-3 text-right">
+                          {activePrescription.rightEye.axis}°
+                        </td>
+                        <td className="py-2 px-3 text-right">
+                          {activePrescription.rightEye.add}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="py-2 px-3 font-sans font-bold text-blue-950">
+                          OS (Left Eye)
+                        </td>
+                        <td className="py-2 px-3 text-right font-bold text-slate-900">
+                          {activePrescription.leftEye.sph}
+                        </td>
+                        <td className="py-2 px-3 text-right">
+                          {activePrescription.leftEye.cyl}
+                        </td>
+                        <td className="py-2 px-3 text-right">
+                          {activePrescription.leftEye.axis}°
+                        </td>
+                        <td className="py-2 px-3 text-right">
+                          {activePrescription.leftEye.add}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                {activePrescription.notes && (
+                  <div className="text-xs text-blue-800 pt-1 border-t border-blue-200/60">
+                    <span className="font-semibold">Optometrist Clinical Note:</span> {activePrescription.notes}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* 2. Cart Line Items */}
             <div className="space-y-3 pb-4 border-b border-slate-200">
               <div className="flex items-center justify-between">
@@ -863,6 +987,21 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
                 <span className="font-mono">{fmt(calculations.grandTotal)}</span>
               </div>
 
+              {activeLabInvoice && (activeLabInvoice.amountPaid || 0) > 0 && (
+                <div className="p-3.5 bg-amber-50/90 border border-amber-300 rounded-xl space-y-1.5 mt-2">
+                  <div className="flex justify-between text-xs text-slate-700 font-medium">
+                    <span>Advance Already Paid:</span>
+                    <span className="font-mono font-bold text-emerald-700">-{fmt(activeLabInvoice.amountPaid)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm font-bold text-slate-900 pt-1 border-t border-amber-200">
+                    <span className="text-amber-950">Balance to Collect:</span>
+                    <span className="font-mono text-base font-extrabold text-rose-700">
+                      {fmt(Math.max(0, calculations.grandTotal - activeLabInvoice.amountPaid))}
+                    </span>
+                  </div>
+                </div>
+              )}
+
               <button
                 type="button"
                 disabled={cart.length === 0}
@@ -870,7 +1009,9 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
                 className="w-full mt-3 py-3.5 px-5 rounded-xl text-sm font-semibold bg-slate-900 text-white hover:bg-slate-800 disabled:bg-slate-200 disabled:text-slate-400 transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-sm"
               >
                 <Receipt className="w-4 h-4 text-amber-400" />
-                Generate Optical Tax Invoice ({fmt(calculations.grandTotal)})
+                {activeLabInvoice && (activeLabInvoice.amountPaid || 0) > 0
+                  ? `Collect Balance & Generate Invoice (${fmt(Math.max(0, calculations.grandTotal - activeLabInvoice.amountPaid))})`
+                  : `Generate Optical Tax Invoice (${fmt(calculations.grandTotal)})`}
               </button>
             </div>
           </div>
