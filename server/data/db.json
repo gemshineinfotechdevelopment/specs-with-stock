@@ -18,17 +18,16 @@
       "reorderLevel": 5,
       "sku": "OPT-101",
       "stock": 11,
-      "updatedAt": "2026-11-13T06:04:42.262Z"
+      "updatedAt": "2026-11-13T06:40:54.571Z"
     }
   ],
   "customers": [],
   "invoices": [],
   "settings": {
-    "defaultHsnCode": "90031100",
     "storeName": "Optic Vision Care",
     "branchName": "T. Nagar Flagship Showroom",
     "gstin": "33AABCL1234F1Z8",
-    "phone": "+91 44 2815 4400",
+    "phone": "9874563210",
     "email": "care@luminaoptic.in",
     "address": "No. 42, Usman Road, T. Nagar, Chennai, Tamil Nadu 600017",
     "invoicePrefix": "LUM-2026-",
@@ -39,6 +38,7 @@
     "footerTerms": "1. Lens fitting warranties valid for 1 year against coating peel.\n2. No refund after lens surfacing is initiated.\n3. Goods once sold can be adjusted against store credit within 7 days.",
     "defaultLowStockThreshold": 5,
     "createdAt": "2026-11-03T06:03:01.477Z",
-    "updatedAt": "2026-11-13T06:02:25.665Z"
+    "updatedAt": "2026-11-13T07:35:29.705Z",
+    "defaultHsnCode": "90031100"
   }
 }

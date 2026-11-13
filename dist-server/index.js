@@ -1134,15 +1134,15 @@ if (fs2.existsSync(serverEnvPath)) {
 }
 dotenv.config();
 var app = express();
-var PORT = Number(process.env.PORT) || 5026;
-var CLIENT_URL = process.env.CLIENT_URL || "https://specs-billing.gemshine.tech";
+var PORT = Number(process.env.PORT) || 5028;
+var CLIENT_URL = process.env.CLIENT_URL || "https://specs-stock.gemshine.tech";
 db.connectMongo().catch((err) => {
   console.warn("MongoDB connection notice:", err.message);
 });
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || origin.startsWith("http://localhost") || origin.startsWith("http://127.0.0.1") || origin.includes("specs-billing.gemshine.tech") || origin === CLIENT_URL) {
+      if (!origin || origin.startsWith("http://localhost") || origin.startsWith("http://127.0.0.1") || origin.includes("specs-stock.gemshine.tech") || origin.includes("specs-billing.gemshine.tech") || origin === CLIENT_URL) {
         callback(null, true);
       } else {
         callback(null, true);

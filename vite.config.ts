@@ -5,7 +5,7 @@ import { defineConfig, loadEnv } from 'vite';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  const serverTarget = env.VITE_SERVER_URL || 'http://localhost:5000';
+  const serverTarget = env.VITE_SERVER_URL || 'http://localhost:5028';
   const clientPort = Number(env.VITE_PORT) || 5173;
 
   return {

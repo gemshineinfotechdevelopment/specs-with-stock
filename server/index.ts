@@ -23,8 +23,8 @@ import { aiRouter } from './routes/ai.routes.js';
 import { db } from './data/store.js';
 
 const app = express();
-const PORT = Number(process.env.PORT) || 5026;
-const CLIENT_URL = process.env.CLIENT_URL || 'https://specs-billing.gemshine.tech';
+const PORT = Number(process.env.PORT) || 5028;
+const CLIENT_URL = process.env.CLIENT_URL || 'https://specs-stock.gemshine.tech';
 
 // Connect to MongoDB (with graceful fallback to JSON store)
 db.connectMongo().catch((err) => {
@@ -40,6 +40,7 @@ app.use(
         !origin ||
         origin.startsWith('http://localhost') ||
         origin.startsWith('http://127.0.0.1') ||
+        origin.includes('specs-stock.gemshine.tech') ||
         origin.includes('specs-billing.gemshine.tech') ||
         origin === CLIENT_URL
       ) {
