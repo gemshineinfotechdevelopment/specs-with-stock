@@ -192,6 +192,54 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
       maximumFractionDigits: 0,
     })}`;
 
+  const getExpandedCustomerItems = (custInvoices: any[], cust: Customer) => {
+    const list: any[] = [];
+    (custInvoices || []).forEach((inv: any) => {
+      (inv.items || []).forEach((item: any) => {
+        const qty = Number(item.quantity) && Number(item.quantity) > 1 ? Number(item.quantity) : 1;
+        if (qty > 1) {
+          const unitAmt = item.unitPrice || Math.round((item.lineTotal || 0) / qty);
+          for (let i = 1; i <= qty; i++) {
+            list.push({
+              ...item,
+              name: `${item.name} (Item #${i})`,
+              quantity: 1,
+              unitPrice: unitAmt,
+              lineTotal: unitAmt,
+            });
+          }
+        } else {
+          list.push({
+            ...item,
+            quantity: 1,
+            lineTotal: item.lineTotal || item.unitPrice || 0,
+          });
+        }
+      });
+    });
+
+    // Fallback: If no invoice items found, but customer has totalSpent or ordersCount > 0
+    if (list.length === 0 && (cust.ordersCount || cust.totalSpent)) {
+      const count = Math.max(1, cust.ordersCount || 1);
+      const unitAmt = Math.round((cust.totalSpent || 0) / count);
+      const baseName = cust.prescription?.lensType
+        ? `Rx: ${cust.prescription.lensType}`
+        : 'Eyewear Purchase';
+      for (let i = 1; i <= count; i++) {
+        list.push({
+          productId: `gen-item-${i}`,
+          name: count > 1 ? `${baseName} (Item #${i})` : baseName,
+          quantity: 1,
+          unitPrice: unitAmt,
+          lineTotal: unitAmt,
+          discount: 0,
+        });
+      }
+    }
+
+    return list;
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -272,14 +320,15 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                           customer.phone.replace(/\D/g, '').slice(-10))
                   ) || [];
 
-                  const allItems = custInvoices.flatMap((inv: any) => inv.items || []);
+                  const rowItems = getExpandedCustomerItems(custInvoices, customer);
                   const productNames =
-                    allItems.length > 0
-                      ? allItems.map((i: any) => i.name).filter(Boolean).join(', ')
+                    rowItems.length > 0
+                      ? rowItems.map((i: any) => i.name).filter(Boolean).join(', ')
                       : pendingInvoice?.items?.[0]?.name ||
                         (customer.prescription
                           ? `Rx: ${customer.prescription.lensType}`
                           : 'Eyewear Purchase');
+                  const orderItemsCount = Math.max(rowItems.length, customer.ordersCount || 1);
 
                   return (
                     <tr
@@ -327,7 +376,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                       {/* 4. Order Items */}
                       <td className="py-3.5 px-4 text-center font-mono text-xs text-slate-600 whitespace-nowrap">
                         <span className="px-2.5 py-1 rounded-md bg-slate-100 font-medium">
-                          {customer.ordersCount} {customer.ordersCount === 1 ? 'item' : 'items'}
+                          {orderItemsCount} {orderItemsCount === 1 ? 'item' : 'items'}
                         </span>
                       </td>
 
@@ -722,7 +771,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                 viewingCustomer.phone.replace(/\D/g, '').slice(-10))
         ) || [];
 
-        const viewPurchasedItems = viewCustomerInvoices.flatMap((inv: any) => inv.items || []);
+        const viewPurchasedItems = getExpandedCustomerItems(viewCustomerInvoices, viewingCustomer);
         const totalStaffDiscount = viewCustomerInvoices.reduce(
           (sum: number, inv: any) => sum + (inv.totalDiscount || 0),
           0
@@ -770,7 +819,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                         {fmt(viewingCustomer.totalSpent)}
                       </div>
                       <div className="text-xs text-slate-500">
-                        {viewingCustomer.ordersCount} orders · Last Visit: {viewingCustomer.lastVisit}
+                        {Math.max(viewPurchasedItems.length, viewingCustomer.ordersCount || 1)} orders · Last Visit: {viewingCustomer.lastVisit}
                       </div>
                     </div>
                   </div>

@@ -292,13 +292,18 @@ export default function App() {
     );
 
     // 4. Update or create customer profile
+    const totalItemQty = invoiceData.items.reduce(
+      (sum, item) => sum + (item.quantity || 1),
+      0
+    );
+
     if (newCustomerData) {
       const createdCustomer: Customer = {
         ...newCustomerData,
         id: invoiceData.customerId,
         lastVisit: todayIso,
         totalSpent: invoiceData.grandTotal,
-        ordersCount: 1,
+        ordersCount: totalItemQty || 1,
       };
       setCustomers((prev) => [createdCustomer, ...prev]);
     } else {
@@ -311,7 +316,7 @@ export default function App() {
             totalSpent: existingLabInv
               ? Math.max(0, c.totalSpent - existingLabInv.grandTotal + invoiceData.grandTotal)
               : c.totalSpent + invoiceData.grandTotal,
-            ordersCount: existingLabInv ? c.ordersCount : c.ordersCount + 1,
+            ordersCount: existingLabInv ? Math.max(c.ordersCount, totalItemQty) : c.ordersCount + (totalItemQty || 1),
             prescription: invoiceData.prescription || c.prescription,
             isNewPatient: false,
           };
@@ -480,6 +485,25 @@ export default function App() {
       const cgst = Math.round(totalTax / 2);
       const sgst = totalTax - cgst;
 
+      const unitSubtotal = Math.round(subtotal / orderQty);
+      const items = Array.from({ length: orderQty }, (_, i) => ({
+        productId: `rx-lab-lens-${i + 1}`,
+        sku: `RX-LAB-${i + 1}`,
+        name:
+          orderQty > 1
+            ? `Rx Lab Order - ${rxLensName} Fitting (Pair #${i + 1})`
+            : `Rx Lab Order - ${rxLensName} Fitting`,
+        category: 'Power Glasses' as const,
+        hsnCode: '90031100',
+        quantity: 1,
+        unitPrice: unitSubtotal,
+        lensUpgradeLabel: rxLensName,
+        lensUpgradePrice: 0,
+        discount: 0,
+        gstRate: gstRate,
+        lineTotal: unitSubtotal,
+      }));
+
       const labInvoice: SalesInvoice = {
         id: `inv-${Date.now()}`,
         invoiceNumber: nextInvNum,
@@ -487,22 +511,7 @@ export default function App() {
         customerId: custId,
         customerName: cust.name,
         customerPhone: cust.phone,
-        items: [
-          {
-            productId: 'rx-lab-lens',
-            sku: 'RX-LAB',
-            name: `Rx Lab Order - ${rxLensName} Fitting`,
-            category: 'Power Glasses',
-            hsnCode: '90031100',
-            quantity: orderQty,
-            unitPrice: Math.round(subtotal / orderQty),
-            lensUpgradeLabel: rxLensName,
-            lensUpgradePrice: 0,
-            discount: 0,
-            gstRate: gstRate,
-            lineTotal: subtotal,
-          },
-        ],
+        items: items,
         subtotal: subtotal,
         totalDiscount: 0,
         cgstAmount: cgst,
