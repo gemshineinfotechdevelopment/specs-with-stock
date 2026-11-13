@@ -236,7 +236,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
               <tr className="border-b border-slate-200 text-xs font-semibold text-slate-500 bg-slate-50/80">
                 <th className="py-3 px-4">Customer Name</th>
                 <th className="py-3 px-4 font-mono">Phone Number</th>
-                <th className="py-3 px-4">Order Name</th>
+                <th className="py-3 px-4">Product Name</th>
                 <th className="py-3 px-4 text-center">Order Items</th>
                 <th className="py-3 px-4 text-right">Price</th>
                 <th className="py-3 px-4 text-right">Action</th>
@@ -262,12 +262,24 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                   );
                   const canLoadToPos = Boolean(customer.isNewPatient || pendingInvoice);
 
-                  // Order name / lens details
-                  const orderName =
-                    pendingInvoice?.items?.[0]?.name ||
-                    (customer.prescription
-                      ? `Rx: ${customer.prescription.lensType}`
-                      : 'Eyewear Purchase');
+                  // Match customer's invoices by customerId or matching phone number
+                  const custInvoices = invoices?.filter(
+                    (inv: any) =>
+                      inv.customerId === customer.id ||
+                      (inv.customerPhone &&
+                        customer.phone &&
+                        inv.customerPhone.replace(/\D/g, '').slice(-10) ===
+                          customer.phone.replace(/\D/g, '').slice(-10))
+                  ) || [];
+
+                  const allItems = custInvoices.flatMap((inv: any) => inv.items || []);
+                  const productNames =
+                    allItems.length > 0
+                      ? allItems.map((i: any) => i.name).filter(Boolean).join(', ')
+                      : pendingInvoice?.items?.[0]?.name ||
+                        (customer.prescription
+                          ? `Rx: ${customer.prescription.lensType}`
+                          : 'Eyewear Purchase');
 
                   return (
                     <tr
@@ -297,13 +309,13 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                         {customer.phone}
                       </td>
 
-                      {/* 3. Order Name */}
+                      {/* 3. Product Name */}
                       <td className="py-3.5 px-4">
                         <div
-                          className="text-xs font-medium text-slate-800 line-clamp-1 max-w-[240px]"
-                          title={orderName}
+                          className="text-xs font-medium text-slate-800 line-clamp-1 max-w-[260px]"
+                          title={productNames}
                         >
-                          {orderName}
+                          {productNames}
                         </div>
                         {customer.prescription && (
                           <div className="text-[11px] text-slate-400 font-mono">
@@ -700,6 +712,22 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
         );
         const canLoadToPos = Boolean(viewingCustomer.isNewPatient || viewPendingInvoice);
 
+        // Match customer's invoices by customerId or matching 10-digit phone
+        const viewCustomerInvoices = invoices?.filter(
+          (inv: any) =>
+            inv.customerId === viewingCustomer.id ||
+            (inv.customerPhone &&
+              viewingCustomer.phone &&
+              inv.customerPhone.replace(/\D/g, '').slice(-10) ===
+                viewingCustomer.phone.replace(/\D/g, '').slice(-10))
+        ) || [];
+
+        const viewPurchasedItems = viewCustomerInvoices.flatMap((inv: any) => inv.items || []);
+        const totalStaffDiscount = viewCustomerInvoices.reduce(
+          (sum: number, inv: any) => sum + (inv.totalDiscount || 0),
+          0
+        );
+
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
             <div className="bg-white border border-slate-200 rounded-xl max-w-xl w-full overflow-hidden shadow-2xl my-auto max-h-[92vh] flex flex-col">
@@ -747,6 +775,66 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                     </div>
                   </div>
                 </div>
+
+                {/* Purchased Products & Staff Discount Details */}
+                {viewPurchasedItems.length > 0 && (
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                        Purchased Products ({viewPurchasedItems.length})
+                      </span>
+                      {totalStaffDiscount > 0 && (
+                        <span className="text-xs font-semibold font-mono text-emerald-700 bg-emerald-100/70 border border-emerald-300 px-2.5 py-0.5 rounded-full">
+                          Staff Discount: -{fmt(totalStaffDiscount)}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      {viewPurchasedItems.map((item: any, idx: number) => (
+                        <div
+                          key={idx}
+                          className="p-3 bg-white border border-slate-200 rounded-lg flex items-center justify-between gap-3 shadow-2xs"
+                        >
+                          <div>
+                            <div className="text-sm font-semibold text-slate-900">
+                              {item.name}
+                            </div>
+                            <div className="text-xs font-mono text-slate-500 mt-0.5">
+                              {item.sku ? `SKU: ${item.sku} · ` : ''}Qty: {item.quantity || 1}
+                              {item.lensUpgradeLabel && item.lensUpgradeLabel !== 'Standard Included Lens'
+                                ? ` · ${item.lensUpgradeLabel}`
+                                : ''}
+                            </div>
+                          </div>
+                          <div className="text-right font-mono">
+                            <div className="text-sm font-bold text-slate-900">
+                              {fmt(item.lineTotal || (item.unitPrice || 0) * (item.quantity || 1))}
+                            </div>
+                            {item.discount > 0 && (
+                              <div className="text-[11px] text-emerald-600">
+                                Discount: -{fmt(item.discount)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-200 space-y-1 text-xs">
+                      {totalStaffDiscount > 0 && (
+                        <div className="flex justify-between text-emerald-700 font-medium">
+                          <span>Staff Discount:</span>
+                          <span className="font-mono font-bold">-{fmt(totalStaffDiscount)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-slate-900 font-bold text-sm pt-1 border-t border-slate-200/60">
+                        <span>Total Paid Amount:</span>
+                        <span className="font-mono">{fmt(viewingCustomer.totalSpent)}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Pending Eye Test Order details */}
                 {viewPendingInvoice && (
@@ -828,11 +916,11 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                       </div>
                     )}
                   </div>
-                ) : (
+                ) : viewPurchasedItems.length === 0 && !viewPendingInvoice ? (
                   <div className="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-xs text-slate-500 text-center">
-                    No optical prescription recorded for this customer (Sunglasses / Ready-Made Glasses).
+                    No optical prescription or purchases recorded for this customer.
                   </div>
-                )}
+                ) : null}
               </div>
 
               <div className="px-5 py-3.5 bg-slate-100 border-t border-slate-200 flex items-center justify-end gap-2.5">
