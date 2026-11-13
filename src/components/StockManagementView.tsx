@@ -18,6 +18,7 @@ import {
   DollarSign,
   Tag,
   Layers,
+  ChevronDown,
 } from 'lucide-react';
 import { Product, EyewearCategory, StoreSettings } from '../types';
 import { generateNextSequentialSku } from './ProductsView';
@@ -32,6 +33,13 @@ interface StockManagementViewProps {
   onUpdateProduct: (product: Product) => void;
   onDeleteProduct: (productId: string) => void;
 }
+
+const CATEGORIES: EyewearCategory[] = [
+  'Sunglasses',
+  'Cooling Glasses',
+  'Power Glasses',
+  'Lenses & Care',
+];
 
 export const StockManagementView: React.FC<StockManagementViewProps> = ({
   products,
@@ -49,6 +57,7 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
 
   // Modal States
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
@@ -130,6 +139,7 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
     setName('');
     setBrand('');
     setCategory(categoryFilter !== 'All' ? categoryFilter : 'Power Glasses');
+    setIsCategoryDropdownOpen(false);
     setPrice('');
     setStock('10');
     setRightSph('');
@@ -151,6 +161,7 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
     setName(product.name);
     setBrand(product.brand);
     setCategory(product.category);
+    setIsCategoryDropdownOpen(false);
     setPrice(String(product.price));
     setStock(String(product.stock));
     setRightSph(product.rightEyePower?.sph || '');
@@ -833,23 +844,57 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
 
             <form onSubmit={handleSaveProduct} className="p-4 sm:p-6 space-y-4 overflow-y-auto overflow-x-hidden w-full">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
-                <div className="min-w-0">
+                <div className="min-w-0 relative">
                   <label className="block text-xs font-medium text-slate-700 mb-1">
                     Category *
                   </label>
-                  <select
-                    value={category}
-                    onChange={(e) => {
-                      const newCat = e.target.value as EyewearCategory;
-                      setCategory(newCat);
-                    }}
-                    className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg font-medium focus:outline-none focus:bg-white focus:border-slate-900"
+                  <button
+                    type="button"
+                    onClick={() => setIsCategoryDropdownOpen((prev) => !prev)}
+                    className="w-full px-3 py-2 text-sm bg-slate-50 hover:bg-slate-100/70 border border-slate-200 rounded-lg font-medium text-slate-800 flex items-center justify-between focus:outline-none focus:bg-white focus:border-slate-900 transition-colors cursor-pointer text-left"
+                    aria-haspopup="listbox"
+                    aria-expanded={isCategoryDropdownOpen}
                   >
-                    <option value="Sunglasses">Sunglasses</option>
-                    <option value="Cooling Glasses">Cooling Glasses</option>
-                    <option value="Power Glasses">Power Glasses</option>
-                    <option value="Lenses & Care">Lenses & Care</option>
-                  </select>
+                    <span className="truncate">{category}</span>
+                    <ChevronDown
+                      className={`w-4 h-4 text-slate-500 shrink-0 transition-transform duration-200 ${
+                        isCategoryDropdownOpen ? 'rotate-180 text-slate-900' : ''
+                      }`}
+                    />
+                  </button>
+
+                  {isCategoryDropdownOpen && (
+                    <>
+                      {/* Fixed full-screen transparent click catcher */}
+                      <div
+                        className="fixed inset-0 z-40 cursor-default"
+                        onClick={() => setIsCategoryDropdownOpen(false)}
+                      />
+                      <div className="absolute left-0 right-0 top-full mt-1.5 w-full bg-white border border-slate-200 rounded-lg shadow-xl z-50 overflow-hidden divide-y divide-slate-100 py-1">
+                        {CATEGORIES.map((cat) => {
+                          const isSelected = category === cat;
+                          return (
+                            <button
+                              key={cat}
+                              type="button"
+                              onClick={() => {
+                                setCategory(cat);
+                                setIsCategoryDropdownOpen(false);
+                              }}
+                              className={`w-full px-3.5 py-2.5 text-xs sm:text-sm font-medium flex items-center justify-between text-left transition-colors cursor-pointer ${
+                                isSelected
+                                  ? 'bg-amber-50 text-amber-950 font-semibold'
+                                  : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
+                              }`}
+                            >
+                              <span>{cat}</span>
+                              {isSelected && <Check className="w-4 h-4 text-amber-600 shrink-0 ml-2" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <div className="min-w-0">
