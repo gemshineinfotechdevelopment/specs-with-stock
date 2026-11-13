@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, UserPlus, ShoppingBag, Eye, X, Trash2, Users } from 'lucide-react';
+import { Search, UserPlus, ShoppingBag, Eye, X, Trash2, Users, Receipt } from 'lucide-react';
 import { Customer, OpticalPrescription, StoreSettings } from '../types';
 
 interface CustomersViewProps {
@@ -228,165 +228,137 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
         </div>
       </div>
 
-      {/* Customer & Rx Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {filteredCustomers.length === 0 ? (
-          <div className="col-span-full py-16 text-center bg-white border border-slate-200 rounded-xl space-y-3">
-            <Users className="w-10 h-10 text-slate-300 mx-auto" />
-            <h3 className="text-sm font-semibold text-slate-800">No Customers Found</h3>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              Click &quot;New Patient &amp; Eye Test&quot; above to register your first patient and enter optical prescription measurements.
-            </p>
-          </div>
-        ) : (
-          filteredCustomers.map((customer) => {
-            const pendingInvoice = invoices?.find(
-              (inv: any) =>
-                inv.customerId === customer.id &&
-                inv.orderStatus === 'Lab Fitting'
-            );
-            const canLoadToPos = Boolean(customer.isNewPatient || pendingInvoice);
-
-            return (
-              <div
-                key={customer.id}
-                className="bg-white border border-slate-200 rounded-xl p-5 flex flex-col justify-between space-y-4"
-              >
-                <div className="space-y-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="text-base font-bold text-slate-900">
-                        {customer.name}
-                        {customer.age ? (
-                          <span className="text-xs font-normal text-slate-500 ml-2">
-                            · {customer.age} yrs
-                          </span>
-                        ) : null}
-                      </h3>
-                      <div className="text-xs font-mono text-slate-600 mt-0.5">
-                        {customer.phone} {customer.email ? `· ${customer.email}` : ''}
-                      </div>
-                    </div>
-                    <div className="text-right font-mono">
-                      <div className="text-sm font-bold text-slate-900">
-                        {fmt(customer.totalSpent)}
-                      </div>
-                      <div className="text-xs text-slate-500">
-                        {customer.ordersCount} orders · Last: {customer.lastVisit}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Eye Test Order Pending Status Banner */}
-                  {pendingInvoice && (
-                    <div className="flex items-center justify-between px-3.5 py-2 bg-amber-50/80 border border-amber-300 rounded-lg text-xs">
-                      <div className="flex items-center gap-1.5 font-semibold text-amber-900">
-                        <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                        <span>Eye Test Order Pending POS ({pendingInvoice.invoiceNumber})</span>
-                      </div>
-                      <div className="font-mono text-amber-950 font-bold">
-                        Balance Due: {fmt(pendingInvoice.balanceDue)}
-                      </div>
-                    </div>
-                  )}
-
-              {/* Prescription Table */}
-              {customer.prescription ? (
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3.5 space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-slate-800">
-                      {customer.prescription.lensType}
-                    </span>
-                    <span className="font-mono text-slate-600">
-                      PD: {customer.prescription.pd} mm · Tested:{' '}
-                      {customer.prescription.recordedAt}
-                    </span>
-                  </div>
-
-                  <table className="w-full text-xs font-mono border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-200 text-slate-500">
-                        <th className="py-1 text-left font-sans">Eye</th>
-                        <th className="py-1 text-right">SPH</th>
-                        <th className="py-1 text-right">CYL</th>
-                        <th className="py-1 text-right">AXIS</th>
-                        <th className="py-1 text-right">ADD</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-200/60">
-                      <tr>
-                        <td className="py-1.5 font-sans font-medium text-slate-800">
-                          OD (Right Eye)
-                        </td>
-                        <td className="py-1.5 text-right">
-                          {customer.prescription.rightEye.sph}
-                        </td>
-                        <td className="py-1.5 text-right">
-                          {customer.prescription.rightEye.cyl}
-                        </td>
-                        <td className="py-1.5 text-right">
-                          {customer.prescription.rightEye.axis}°
-                        </td>
-                        <td className="py-1.5 text-right">
-                          {customer.prescription.rightEye.add}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="py-1.5 font-sans font-medium text-slate-800">
-                          OS (Left Eye)
-                        </td>
-                        <td className="py-1.5 text-right">
-                          {customer.prescription.leftEye.sph}
-                        </td>
-                        <td className="py-1.5 text-right">
-                          {customer.prescription.leftEye.cyl}
-                        </td>
-                        <td className="py-1.5 text-right">
-                          {customer.prescription.leftEye.axis}°
-                        </td>
-                        <td className="py-1.5 text-right">
-                          {customer.prescription.leftEye.add}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-
-                  {customer.prescription.notes && (
-                    <p className="text-xs text-slate-600 pt-1 border-t border-slate-200/70">
-                      Optometrist Note: {customer.prescription.notes}
+      {/* Customer & Rx Table View (Row by Row) */}
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-slate-200 text-xs font-semibold text-slate-500 bg-slate-50/80">
+                <th className="py-3 px-4">Customer Name</th>
+                <th className="py-3 px-4 font-mono">Phone Number</th>
+                <th className="py-3 px-4">Order Name</th>
+                <th className="py-3 px-4 text-center">Order Items</th>
+                <th className="py-3 px-4 text-right">Price</th>
+                <th className="py-3 px-4 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 text-sm">
+              {filteredCustomers.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-14 text-center text-slate-500">
+                    <Users className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                    <p className="text-sm font-semibold text-slate-800">No Customers Found</p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Click &quot;New Patient &amp; Eye Test&quot; above to register your first patient.
                     </p>
-                  )}
-                </div>
+                  </td>
+                </tr>
               ) : (
-                <div className="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-lg text-xs text-slate-500 text-center">
-                  No prescription recorded yet (Sunglasses / Zero-Power buyer).
-                </div>
-              )}
-            </div>
+                filteredCustomers.map((customer) => {
+                  const pendingInvoice = invoices?.find(
+                    (inv: any) =>
+                      inv.customerId === customer.id &&
+                      inv.orderStatus === 'Lab Fitting'
+                  );
+                  const canLoadToPos = Boolean(customer.isNewPatient || pendingInvoice);
 
-            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setViewingCustomer(customer)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
-              >
-                <Eye className="w-3.5 h-3.5" />
-                View
-              </button>
-              {canLoadToPos && (
-                <button
-                  type="button"
-                  onClick={() => onBillCustomerInPos(customer.id)}
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800 transition-colors cursor-pointer shadow-xs"
-                >
-                  <ShoppingBag className="w-3.5 h-3.5" />
-                  Load into Billing POS
-                </button>
+                  // Order name / lens details
+                  const orderName =
+                    pendingInvoice?.items?.[0]?.name ||
+                    (customer.prescription
+                      ? `Rx: ${customer.prescription.lensType}`
+                      : 'Eyewear Purchase');
+
+                  return (
+                    <tr
+                      key={customer.id}
+                      className="hover:bg-slate-50/80 transition-colors"
+                    >
+                      {/* 1. Customer Name */}
+                      <td className="py-3.5 px-4">
+                        <div className="font-semibold text-slate-900">
+                          {customer.name}
+                          {customer.age ? (
+                            <span className="text-xs font-normal text-slate-500 ml-1.5">
+                              ({customer.age} yrs)
+                            </span>
+                          ) : null}
+                        </div>
+                        {pendingInvoice && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 mt-0.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                            Pending Eye Test ({pendingInvoice.invoiceNumber})
+                          </span>
+                        )}
+                      </td>
+
+                      {/* 2. Phone Number */}
+                      <td className="py-3.5 px-4 font-mono text-xs text-slate-700 whitespace-nowrap">
+                        {customer.phone}
+                      </td>
+
+                      {/* 3. Order Name */}
+                      <td className="py-3.5 px-4">
+                        <div
+                          className="text-xs font-medium text-slate-800 line-clamp-1 max-w-[240px]"
+                          title={orderName}
+                        >
+                          {orderName}
+                        </div>
+                        {customer.prescription && (
+                          <div className="text-[11px] text-slate-400 font-mono">
+                            PD: {customer.prescription.pd} mm
+                          </div>
+                        )}
+                      </td>
+
+                      {/* 4. Order Items */}
+                      <td className="py-3.5 px-4 text-center font-mono text-xs text-slate-600 whitespace-nowrap">
+                        <span className="px-2.5 py-1 rounded-md bg-slate-100 font-medium">
+                          {customer.ordersCount} {customer.ordersCount === 1 ? 'item' : 'items'}
+                        </span>
+                      </td>
+
+                      {/* 5. Price */}
+                      <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-900 whitespace-nowrap">
+                        <div>{fmt(customer.totalSpent)}</div>
+                        {pendingInvoice && pendingInvoice.balanceDue > 0 && (
+                          <div className="text-[11px] font-normal text-rose-600">
+                            Due: {fmt(pendingInvoice.balanceDue)}
+                          </div>
+                        )}
+                      </td>
+
+                      {/* 6. Action: View & Load into Billing POS */}
+                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setViewingCustomer(customer)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors cursor-pointer shadow-2xs"
+                          >
+                            <Eye className="w-3.5 h-3.5 text-slate-500" />
+                            <span>View</span>
+                          </button>
+                          {canLoadToPos && (
+                            <button
+                              type="button"
+                              onClick={() => onBillCustomerInPos(customer.id)}
+                              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800 transition-colors cursor-pointer shadow-xs"
+                            >
+                              <ShoppingBag className="w-3.5 h-3.5 text-amber-400" />
+                              <span>Load into Billing POS</span>
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
-            </div>
-          </div>
-        );
-      }))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Add Customer / Update Rx Modal */}
@@ -720,124 +692,176 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
       )}
 
       {/* View Customer Details & Rx Modal */}
-      {viewingCustomer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="bg-white border border-slate-200 rounded-xl max-w-xl w-full overflow-hidden shadow-2xl my-auto max-h-[92vh] flex flex-col">
-            <div className="flex items-center justify-between px-5 py-3.5 bg-slate-900 text-white shrink-0">
-              <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-amber-400" />
-                <h2 className="text-base font-semibold">
-                  Customer & Optometry Profile
-                </h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setViewingCustomer(null)}
-                className="p-1.5 text-slate-300 hover:text-white cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      {viewingCustomer && (() => {
+        const viewPendingInvoice = invoices?.find(
+          (inv: any) =>
+            inv.customerId === viewingCustomer.id &&
+            inv.orderStatus === 'Lab Fitting'
+        );
+        const canLoadToPos = Boolean(viewingCustomer.isNewPatient || viewPendingInvoice);
 
-            <div className="p-5 space-y-4 overflow-y-auto">
-              {/* Customer Basics */}
-              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-900">
-                      {viewingCustomer.name}
-                      {viewingCustomer.age ? (
-                        <span className="text-xs font-normal text-slate-500 ml-2">
-                          · {viewingCustomer.age} years old
-                        </span>
-                      ) : null}
-                    </h3>
-                    <div className="text-xs font-mono text-slate-600 mt-1">
-                      Phone: <span className="font-semibold text-slate-800">{viewingCustomer.phone}</span>
-                      {viewingCustomer.email ? ` · Email: ${viewingCustomer.email}` : ''}
-                    </div>
-                  </div>
-                  <div className="text-right font-mono">
-                    <div className="text-base font-bold text-slate-900">
-                      {fmt(viewingCustomer.totalSpent)}
-                    </div>
-                    <div className="text-xs text-slate-500">
-                      {viewingCustomer.ordersCount} orders · Last Visit: {viewingCustomer.lastVisit}
-                    </div>
-                  </div>
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
+            <div className="bg-white border border-slate-200 rounded-xl max-w-xl w-full overflow-hidden shadow-2xl my-auto max-h-[92vh] flex flex-col">
+              <div className="flex items-center justify-between px-5 py-3.5 bg-slate-900 text-white shrink-0">
+                <div className="flex items-center gap-2">
+                  <Users className="w-5 h-5 text-amber-400" />
+                  <h2 className="text-base font-semibold">
+                    Customer & Optometry Profile
+                  </h2>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setViewingCustomer(null)}
+                  className="p-1.5 text-slate-300 hover:text-white cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
 
-              {/* Prescription Details */}
-              {viewingCustomer.prescription ? (
+              <div className="p-5 space-y-4 overflow-y-auto">
+                {/* Customer Basics */}
                 <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-slate-800 uppercase tracking-wider">
-                      Prescribed Lens: {viewingCustomer.prescription.lensType}
-                    </span>
-                    <span className="font-mono text-slate-600">
-                      PD: {viewingCustomer.prescription.pd} mm · Tested: {viewingCustomer.prescription.recordedAt}
-                    </span>
-                  </div>
-
-                  <table className="w-full text-xs font-mono border-collapse bg-white rounded-lg border border-slate-200 overflow-hidden">
-                    <thead>
-                      <tr className="border-b border-slate-200 bg-slate-100/70 text-slate-600 font-semibold">
-                        <th className="py-2 px-3 text-left font-sans">Eye</th>
-                        <th className="py-2 px-3 text-right">SPH</th>
-                        <th className="py-2 px-3 text-right">CYL</th>
-                        <th className="py-2 px-3 text-right">AXIS</th>
-                        <th className="py-2 px-3 text-right">ADD</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      <tr>
-                        <td className="py-2 px-3 font-sans font-semibold text-slate-800">
-                          Right Eye (OD)
-                        </td>
-                        <td className="py-2 px-3 text-right">{viewingCustomer.prescription.rightEye.sph}</td>
-                        <td className="py-2 px-3 text-right">{viewingCustomer.prescription.rightEye.cyl}</td>
-                        <td className="py-2 px-3 text-right">{viewingCustomer.prescription.rightEye.axis}°</td>
-                        <td className="py-2 px-3 text-right">{viewingCustomer.prescription.rightEye.add}</td>
-                      </tr>
-                      <tr>
-                        <td className="py-2 px-3 font-sans font-semibold text-slate-800">
-                          Left Eye (OS)
-                        </td>
-                        <td className="py-2 px-3 text-right">{viewingCustomer.prescription.leftEye.sph}</td>
-                        <td className="py-2 px-3 text-right">{viewingCustomer.prescription.leftEye.cyl}</td>
-                        <td className="py-2 px-3 text-right">{viewingCustomer.prescription.leftEye.axis}°</td>
-                        <td className="py-2 px-3 text-right">{viewingCustomer.prescription.leftEye.add}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-
-                  {viewingCustomer.prescription.notes && (
-                    <div className="text-xs text-slate-600 pt-2 border-t border-slate-200">
-                      <span className="font-semibold text-slate-800">Optometrist Clinical Notes:</span>{' '}
-                      {viewingCustomer.prescription.notes}
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900">
+                        {viewingCustomer.name}
+                        {viewingCustomer.age ? (
+                          <span className="text-xs font-normal text-slate-500 ml-2">
+                            · {viewingCustomer.age} years old
+                          </span>
+                        ) : null}
+                      </h3>
+                      <div className="text-xs font-mono text-slate-600 mt-1">
+                        Phone: <span className="font-semibold text-slate-800">{viewingCustomer.phone}</span>
+                        {viewingCustomer.email ? ` · Email: ${viewingCustomer.email}` : ''}
+                      </div>
                     </div>
-                  )}
+                    <div className="text-right font-mono">
+                      <div className="text-base font-bold text-slate-900">
+                        {fmt(viewingCustomer.totalSpent)}
+                      </div>
+                      <div className="text-xs text-slate-500">
+                        {viewingCustomer.ordersCount} orders · Last Visit: {viewingCustomer.lastVisit}
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              ) : (
-                <div className="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-xs text-slate-500 text-center">
-                  No optical prescription recorded for this customer (Sunglasses / Ready-Made Glasses).
-                </div>
-              )}
-            </div>
 
-            <div className="px-5 py-3.5 bg-slate-100 border-t border-slate-200 flex items-center justify-end gap-2.5">
-              <button
-                type="button"
-                onClick={() => setViewingCustomer(null)}
-                className="px-4 py-2 rounded-lg text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800 transition-colors cursor-pointer"
-              >
-                Close
-              </button>
+                {/* Pending Eye Test Order details */}
+                {viewPendingInvoice && (
+                  <div className="p-4 bg-amber-50/90 border border-amber-300 rounded-xl space-y-2">
+                    <div className="flex items-center justify-between text-xs font-bold text-amber-950">
+                      <div className="flex items-center gap-1.5">
+                        <Receipt className="w-4 h-4 text-amber-700" />
+                        <span>Pending Eye Test Order #{viewPendingInvoice.invoiceNumber}</span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-full bg-amber-200 uppercase text-[10px]">
+                        {viewPendingInvoice.orderStatus}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-xs pt-1.5 border-t border-amber-200">
+                      <div>
+                        <span className="text-[10px] text-amber-800 block">Total Bill</span>
+                        <span className="font-mono font-bold text-slate-900">{fmt(viewPendingInvoice.grandTotal)}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-amber-800 block">Advance Paid</span>
+                        <span className="font-mono font-bold text-emerald-700">{fmt(viewPendingInvoice.amountPaid)}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-amber-800 block">Balance Due</span>
+                        <span className="font-mono font-extrabold text-rose-700">{fmt(viewPendingInvoice.balanceDue)}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Prescription Details */}
+                {viewingCustomer.prescription ? (
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-slate-800 uppercase tracking-wider">
+                        Prescribed Lens: {viewingCustomer.prescription.lensType}
+                      </span>
+                      <span className="font-mono text-slate-600">
+                        PD: {viewingCustomer.prescription.pd} mm · Tested: {viewingCustomer.prescription.recordedAt}
+                      </span>
+                    </div>
+
+                    <table className="w-full text-xs font-mono border-collapse bg-white rounded-lg border border-slate-200 overflow-hidden">
+                      <thead>
+                        <tr className="border-b border-slate-200 bg-slate-100/70 text-slate-600 font-semibold">
+                          <th className="py-2 px-3 text-left font-sans">Eye</th>
+                          <th className="py-2 px-3 text-right">SPH</th>
+                          <th className="py-2 px-3 text-right">CYL</th>
+                          <th className="py-2 px-3 text-right">AXIS</th>
+                          <th className="py-2 px-3 text-right">ADD</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        <tr>
+                          <td className="py-2 px-3 font-sans font-semibold text-slate-800">
+                            Right Eye (OD)
+                          </td>
+                          <td className="py-2 px-3 text-right">{viewingCustomer.prescription.rightEye.sph}</td>
+                          <td className="py-2 px-3 text-right">{viewingCustomer.prescription.rightEye.cyl}</td>
+                          <td className="py-2 px-3 text-right">{viewingCustomer.prescription.rightEye.axis}°</td>
+                          <td className="py-2 px-3 text-right">{viewingCustomer.prescription.rightEye.add}</td>
+                        </tr>
+                        <tr>
+                          <td className="py-2 px-3 font-sans font-semibold text-slate-800">
+                            Left Eye (OS)
+                          </td>
+                          <td className="py-2 px-3 text-right">{viewingCustomer.prescription.leftEye.sph}</td>
+                          <td className="py-2 px-3 text-right">{viewingCustomer.prescription.leftEye.cyl}</td>
+                          <td className="py-2 px-3 text-right">{viewingCustomer.prescription.leftEye.axis}°</td>
+                          <td className="py-2 px-3 text-right">{viewingCustomer.prescription.leftEye.add}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+
+                    {viewingCustomer.prescription.notes && (
+                      <div className="text-xs text-slate-600 pt-2 border-t border-slate-200">
+                        <span className="font-semibold text-slate-800">Optometrist Clinical Notes:</span>{' '}
+                        {viewingCustomer.prescription.notes}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-xs text-slate-500 text-center">
+                    No optical prescription recorded for this customer (Sunglasses / Ready-Made Glasses).
+                  </div>
+                )}
+              </div>
+
+              <div className="px-5 py-3.5 bg-slate-100 border-t border-slate-200 flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setViewingCustomer(null)}
+                  className="px-4 py-2 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+                >
+                  Close
+                </button>
+                {canLoadToPos && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const custId = viewingCustomer.id;
+                      setViewingCustomer(null);
+                      onBillCustomerInPos(custId);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800 transition-colors cursor-pointer shadow-xs"
+                  >
+                    <ShoppingBag className="w-3.5 h-3.5 text-amber-400" />
+                    Load into Billing POS
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 };
