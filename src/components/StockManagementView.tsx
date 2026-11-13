@@ -59,11 +59,7 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
   const [name, setName] = useState('');
   const [brand, setBrand] = useState('');
   const [category, setCategory] = useState<EyewearCategory>('Power Glasses');
-  const [frameMaterial, setFrameMaterial] = useState('');
-  const [frameShape, setFrameShape] = useState('');
-  const [lensFeature, setLensFeature] = useState('');
   const [price, setPrice] = useState('');
-  const [costPrice, setCostPrice] = useState('');
   const [stock, setStock] = useState('10');
 
   // Power values
@@ -134,11 +130,7 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
     setName('');
     setBrand('');
     setCategory(categoryFilter !== 'All' ? categoryFilter : 'Power Glasses');
-    setFrameMaterial('');
-    setFrameShape('');
-    setLensFeature('');
     setPrice('');
-    setCostPrice('');
     setStock('10');
     setRightSph('');
     setRightCyl('');
@@ -159,11 +151,7 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
     setName(product.name);
     setBrand(product.brand);
     setCategory(product.category);
-    setFrameMaterial(product.frameMaterial);
-    setFrameShape(product.frameShape);
-    setLensFeature(product.lensFeature);
     setPrice(String(product.price));
-    setCostPrice(String(product.costPrice));
     setStock(String(product.stock));
     setRightSph(product.rightEyePower?.sph || '');
     setRightCyl(product.rightEyePower?.cyl || '');
@@ -203,16 +191,18 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
       name: name.trim(),
       brand: brand.trim() || 'House Brand',
       category,
-      frameMaterial: frameMaterial.trim() || 'Acetate',
-      frameShape: frameShape.trim() || 'Standard',
-      lensFeature: lensFeature.trim() || (isPowerGlasses ? 'Single Vision Anti-Glare' : 'Polarized UV400'),
+      frameMaterial: editingProduct?.frameMaterial || 'Standard',
+      frameShape: editingProduct?.frameShape || 'Standard',
+      lensFeature:
+        editingProduct?.lensFeature ||
+        (isPowerGlasses ? 'Single Vision Anti-Glare' : 'Polarized UV400'),
       price: Math.max(0, Number(price) || 0),
-      costPrice: Math.max(0, Number(costPrice) || 0),
+      costPrice: editingProduct?.costPrice || 0,
       gstRate: defaultGst,
       stock: Math.max(0, Number(stock) || 0),
       reorderLevel: defaultAlert,
       hsnCode: defaultHsn,
-      imageUrl: '',
+      imageUrl: editingProduct?.imageUrl || '',
       isUserAdded: true,
       ...(isPowerGlasses && hasPowerValues
         ? {
@@ -819,16 +809,16 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
 
       {/* Add / Edit Product Modal */}
       {isFormModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="bg-white border border-slate-200 rounded-xl max-w-xl w-full overflow-hidden shadow-2xl my-2 sm:my-8 max-h-[92vh] flex flex-col">
-            <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 bg-slate-900 text-white shrink-0">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-2.5 sm:p-4 overflow-y-auto overflow-x-hidden">
+          <div className="bg-white border border-slate-200 rounded-xl max-w-lg sm:max-w-xl w-full overflow-hidden shadow-2xl my-auto max-h-[92vh] flex flex-col">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 bg-slate-900 text-white shrink-0">
               <div className="flex items-center gap-2">
                 {editingProduct ? (
                   <Edit3 className="w-5 h-5 text-amber-400" />
                 ) : (
                   <Boxes className="w-5 h-5 text-amber-400" />
                 )}
-                <h2 className="text-base font-semibold">
+                <h2 className="text-base font-semibold truncate">
                   {editingProduct ? 'Edit Eyewear Product & Stock' : 'Add New Product to Inventory'}
                 </h2>
               </div>
@@ -841,9 +831,9 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
               </button>
             </div>
 
-            <form onSubmit={handleSaveProduct} className="p-4 sm:p-6 space-y-4 overflow-y-auto">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
+            <form onSubmit={handleSaveProduct} className="p-4 sm:p-6 space-y-4 overflow-y-auto overflow-x-hidden w-full">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
+                <div className="min-w-0">
                   <label className="block text-xs font-medium text-slate-700 mb-1">
                     Category *
                   </label>
@@ -852,11 +842,8 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
                     onChange={(e) => {
                       const newCat = e.target.value as EyewearCategory;
                       setCategory(newCat);
-                      if (newCat === 'Power Glasses' && (!lensFeature || lensFeature === 'Polarized UV400')) {
-                        setLensFeature('Single Vision Anti-Glare');
-                      }
                     }}
-                    className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg font-medium"
+                    className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg font-medium focus:outline-none focus:bg-white focus:border-slate-900"
                   >
                     <option value="Sunglasses">Sunglasses</option>
                     <option value="Cooling Glasses">Cooling Glasses</option>
@@ -865,7 +852,7 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
                   </select>
                 </div>
 
-                <div>
+                <div className="min-w-0">
                   <div className="flex items-center justify-between mb-1">
                     <label className="block text-xs font-medium text-slate-700">
                       SKU Code *
@@ -897,8 +884,8 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
+                <div className="min-w-0">
                   <label className="block text-xs font-medium text-slate-700 mb-1">
                     Model Name *
                   </label>
@@ -908,11 +895,11 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. Aviator Classic, Matte Black Frame"
-                    className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg"
+                    className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:bg-white focus:border-slate-900"
                   />
                 </div>
 
-                <div>
+                <div className="min-w-0">
                   <label className="block text-xs font-medium text-slate-700 mb-1">
                     Brand Name *
                   </label>
@@ -922,54 +909,13 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
                     value={brand}
                     onChange={(e) => setBrand(e.target.value)}
                     placeholder="e.g. Ray-Ban, Fastrack, House Brand"
-                    className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg"
+                    className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:bg-white focus:border-slate-900"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Frame Material
-                  </label>
-                  <input
-                    type="text"
-                    value={frameMaterial}
-                    onChange={(e) => setFrameMaterial(e.target.value)}
-                    placeholder="Acetate, Titanium, Metal"
-                    className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Frame Shape
-                  </label>
-                  <input
-                    type="text"
-                    value={frameShape}
-                    onChange={(e) => setFrameShape(e.target.value)}
-                    placeholder="Square, Round, Cat-Eye"
-                    className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Lens Feature
-                  </label>
-                  <input
-                    type="text"
-                    value={lensFeature}
-                    onChange={(e) => setLensFeature(e.target.value)}
-                    placeholder="Polarized, Blue Cut, UV400"
-                    className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
+                <div className="min-w-0">
                   <label className="block text-xs font-medium text-slate-700 mb-1">
                     Selling Price ({settings.currencySymbol}) *
                   </label>
@@ -980,25 +926,11 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
                     placeholder="1800"
-                    className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg font-mono font-semibold"
+                    className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg font-mono font-semibold focus:outline-none focus:bg-white focus:border-slate-900"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Cost Price ({settings.currencySymbol})
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={costPrice}
-                    onChange={(e) => setCostPrice(e.target.value)}
-                    placeholder="900"
-                    className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg font-mono"
-                  />
-                </div>
-
-                <div>
+                <div className="min-w-0">
                   <label className="block text-xs font-medium text-slate-700 mb-1">
                     Stock Level (Units) *
                   </label>
@@ -1009,116 +941,105 @@ export const StockManagementView: React.FC<StockManagementViewProps> = ({
                     value={stock}
                     onChange={(e) => setStock(e.target.value)}
                     placeholder="10"
-                    className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg font-mono font-bold text-emerald-700"
+                    className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg font-mono font-bold text-emerald-700 focus:outline-none focus:bg-white focus:border-slate-900"
                   />
                 </div>
               </div>
 
-              {/* Settings Auto-applied Information Banner */}
-              <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600">
-                <span className="flex items-center gap-1.5 font-medium text-slate-700">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                  Auto-Applied from Settings:
-                </span>
-                <span className="font-mono text-slate-700">
-                  GST: <strong className="text-slate-900">{settings.defaultGstRate || 12}%</strong>
-                </span>
-                <span className="font-mono text-slate-700">
-                  HSN: <strong className="text-slate-900">{settings.defaultHsnCode || (category === 'Power Glasses' ? '90031100' : '90041000')}</strong>
-                </span>
-                <span className="font-mono text-slate-700">
-                  Reorder Alert: ≤ <strong className="text-slate-900">{settings.defaultLowStockThreshold || 5} units</strong>
-                </span>
-              </div>
-
               {/* Power Glasses Prescription Fields */}
               {category === 'Power Glasses' && (
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-3 w-full min-w-0">
                   <div className="text-xs font-semibold text-slate-800">
                     Optional Default Prescription Powers (for Pre-configured Power Glasses)
                   </div>
-                  <div className="grid grid-cols-4 gap-2">
-                    <div>
-                      <span className="block text-[10px] text-slate-500 font-mono">R - SPH</span>
-                      <input
-                        type="text"
-                        value={rightSph}
-                        onChange={(e) => setRightSph(e.target.value)}
-                        placeholder="-1.25"
-                        className="w-full px-2 py-1 text-xs border rounded font-mono"
-                      />
-                    </div>
-                    <div>
-                      <span className="block text-[10px] text-slate-500 font-mono">R - CYL</span>
-                      <input
-                        type="text"
-                        value={rightCyl}
-                        onChange={(e) => setRightCyl(e.target.value)}
-                        placeholder="-0.50"
-                        className="w-full px-2 py-1 text-xs border rounded font-mono"
-                      />
-                    </div>
-                    <div>
-                      <span className="block text-[10px] text-slate-500 font-mono">R - AXIS</span>
-                      <input
-                        type="text"
-                        value={rightAxis}
-                        onChange={(e) => setRightAxis(e.target.value)}
-                        placeholder="180"
-                        className="w-full px-2 py-1 text-xs border rounded font-mono"
-                      />
-                    </div>
-                    <div>
-                      <span className="block text-[10px] text-slate-500 font-mono">R - ADD</span>
-                      <input
-                        type="text"
-                        value={rightAdd}
-                        onChange={(e) => setRightAdd(e.target.value)}
-                        placeholder="+1.50"
-                        className="w-full px-2 py-1 text-xs border rounded font-mono"
-                      />
+                  <div>
+                    <span className="block text-[11px] font-bold text-slate-700 mb-1.5 font-mono">Right Eye (OD)</span>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      <div className="min-w-0">
+                        <span className="block text-[10px] text-slate-500 font-mono">SPH</span>
+                        <input
+                          type="text"
+                          value={rightSph}
+                          onChange={(e) => setRightSph(e.target.value)}
+                          placeholder="-1.25"
+                          className="w-full min-w-0 px-2 py-1 text-xs border border-slate-200 rounded font-mono bg-white"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="block text-[10px] text-slate-500 font-mono">CYL</span>
+                        <input
+                          type="text"
+                          value={rightCyl}
+                          onChange={(e) => setRightCyl(e.target.value)}
+                          placeholder="-0.50"
+                          className="w-full min-w-0 px-2 py-1 text-xs border border-slate-200 rounded font-mono bg-white"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="block text-[10px] text-slate-500 font-mono">AXIS</span>
+                        <input
+                          type="text"
+                          value={rightAxis}
+                          onChange={(e) => setRightAxis(e.target.value)}
+                          placeholder="180"
+                          className="w-full min-w-0 px-2 py-1 text-xs border border-slate-200 rounded font-mono bg-white"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="block text-[10px] text-slate-500 font-mono">ADD</span>
+                        <input
+                          type="text"
+                          value={rightAdd}
+                          onChange={(e) => setRightAdd(e.target.value)}
+                          placeholder="+1.50"
+                          className="w-full min-w-0 px-2 py-1 text-xs border border-slate-200 rounded font-mono bg-white"
+                        />
+                      </div>
                     </div>
                   </div>
-                  <div className="grid grid-cols-4 gap-2">
-                    <div>
-                      <span className="block text-[10px] text-slate-500 font-mono">L - SPH</span>
-                      <input
-                        type="text"
-                        value={leftSph}
-                        onChange={(e) => setLeftSph(e.target.value)}
-                        placeholder="-1.00"
-                        className="w-full px-2 py-1 text-xs border rounded font-mono"
-                      />
-                    </div>
-                    <div>
-                      <span className="block text-[10px] text-slate-500 font-mono">L - CYL</span>
-                      <input
-                        type="text"
-                        value={leftCyl}
-                        onChange={(e) => setLeftCyl(e.target.value)}
-                        placeholder="-0.50"
-                        className="w-full px-2 py-1 text-xs border rounded font-mono"
-                      />
-                    </div>
-                    <div>
-                      <span className="block text-[10px] text-slate-500 font-mono">L - AXIS</span>
-                      <input
-                        type="text"
-                        value={leftAxis}
-                        onChange={(e) => setLeftAxis(e.target.value)}
-                        placeholder="175"
-                        className="w-full px-2 py-1 text-xs border rounded font-mono"
-                      />
-                    </div>
-                    <div>
-                      <span className="block text-[10px] text-slate-500 font-mono">L - ADD</span>
-                      <input
-                        type="text"
-                        value={leftAdd}
-                        onChange={(e) => setLeftAdd(e.target.value)}
-                        placeholder="+1.50"
-                        className="w-full px-2 py-1 text-xs border rounded font-mono"
-                      />
+                  <div>
+                    <span className="block text-[11px] font-bold text-slate-700 mb-1.5 font-mono">Left Eye (OS)</span>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      <div className="min-w-0">
+                        <span className="block text-[10px] text-slate-500 font-mono">SPH</span>
+                        <input
+                          type="text"
+                          value={leftSph}
+                          onChange={(e) => setLeftSph(e.target.value)}
+                          placeholder="-1.00"
+                          className="w-full min-w-0 px-2 py-1 text-xs border border-slate-200 rounded font-mono bg-white"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="block text-[10px] text-slate-500 font-mono">CYL</span>
+                        <input
+                          type="text"
+                          value={leftCyl}
+                          onChange={(e) => setLeftCyl(e.target.value)}
+                          placeholder="-0.50"
+                          className="w-full min-w-0 px-2 py-1 text-xs border border-slate-200 rounded font-mono bg-white"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="block text-[10px] text-slate-500 font-mono">AXIS</span>
+                        <input
+                          type="text"
+                          value={leftAxis}
+                          onChange={(e) => setLeftAxis(e.target.value)}
+                          placeholder="175"
+                          className="w-full min-w-0 px-2 py-1 text-xs border border-slate-200 rounded font-mono bg-white"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="block text-[10px] text-slate-500 font-mono">ADD</span>
+                        <input
+                          type="text"
+                          value={leftAdd}
+                          onChange={(e) => setLeftAdd(e.target.value)}
+                          placeholder="+1.50"
+                          className="w-full min-w-0 px-2 py-1 text-xs border border-slate-200 rounded font-mono bg-white"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
