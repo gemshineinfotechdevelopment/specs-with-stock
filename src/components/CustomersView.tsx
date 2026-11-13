@@ -35,6 +35,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
   const [ordersCount, setOrdersCount] = useState('1');
   const [visitDate, setVisitDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [viewingCustomer, setViewingCustomer] = useState<Customer | null>(null);
   const [editingCustomerId, setEditingCustomerId] = useState<string | null>(null);
 
   // Customer & Rx form state
@@ -366,11 +367,11 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
             <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
               <button
                 type="button"
-                onClick={() => openEditRxModal(customer)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+                onClick={() => setViewingCustomer(customer)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
               >
                 <Eye className="w-3.5 h-3.5" />
-                Update Eye Rx
+                View
               </button>
               {canLoadToPos && (
                 <button
@@ -714,6 +715,126 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* View Customer Details & Rx Modal */}
+      {viewingCustomer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="bg-white border border-slate-200 rounded-xl max-w-xl w-full overflow-hidden shadow-2xl my-auto max-h-[92vh] flex flex-col">
+            <div className="flex items-center justify-between px-5 py-3.5 bg-slate-900 text-white shrink-0">
+              <div className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-amber-400" />
+                <h2 className="text-base font-semibold">
+                  Customer & Optometry Profile
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setViewingCustomer(null)}
+                className="p-1.5 text-slate-300 hover:text-white cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4 overflow-y-auto">
+              {/* Customer Basics */}
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900">
+                      {viewingCustomer.name}
+                      {viewingCustomer.age ? (
+                        <span className="text-xs font-normal text-slate-500 ml-2">
+                          · {viewingCustomer.age} years old
+                        </span>
+                      ) : null}
+                    </h3>
+                    <div className="text-xs font-mono text-slate-600 mt-1">
+                      Phone: <span className="font-semibold text-slate-800">{viewingCustomer.phone}</span>
+                      {viewingCustomer.email ? ` · Email: ${viewingCustomer.email}` : ''}
+                    </div>
+                  </div>
+                  <div className="text-right font-mono">
+                    <div className="text-base font-bold text-slate-900">
+                      {fmt(viewingCustomer.totalSpent)}
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      {viewingCustomer.ordersCount} orders · Last Visit: {viewingCustomer.lastVisit}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Prescription Details */}
+              {viewingCustomer.prescription ? (
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-slate-800 uppercase tracking-wider">
+                      Prescribed Lens: {viewingCustomer.prescription.lensType}
+                    </span>
+                    <span className="font-mono text-slate-600">
+                      PD: {viewingCustomer.prescription.pd} mm · Tested: {viewingCustomer.prescription.recordedAt}
+                    </span>
+                  </div>
+
+                  <table className="w-full text-xs font-mono border-collapse bg-white rounded-lg border border-slate-200 overflow-hidden">
+                    <thead>
+                      <tr className="border-b border-slate-200 bg-slate-100/70 text-slate-600 font-semibold">
+                        <th className="py-2 px-3 text-left font-sans">Eye</th>
+                        <th className="py-2 px-3 text-right">SPH</th>
+                        <th className="py-2 px-3 text-right">CYL</th>
+                        <th className="py-2 px-3 text-right">AXIS</th>
+                        <th className="py-2 px-3 text-right">ADD</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      <tr>
+                        <td className="py-2 px-3 font-sans font-semibold text-slate-800">
+                          Right Eye (OD)
+                        </td>
+                        <td className="py-2 px-3 text-right">{viewingCustomer.prescription.rightEye.sph}</td>
+                        <td className="py-2 px-3 text-right">{viewingCustomer.prescription.rightEye.cyl}</td>
+                        <td className="py-2 px-3 text-right">{viewingCustomer.prescription.rightEye.axis}°</td>
+                        <td className="py-2 px-3 text-right">{viewingCustomer.prescription.rightEye.add}</td>
+                      </tr>
+                      <tr>
+                        <td className="py-2 px-3 font-sans font-semibold text-slate-800">
+                          Left Eye (OS)
+                        </td>
+                        <td className="py-2 px-3 text-right">{viewingCustomer.prescription.leftEye.sph}</td>
+                        <td className="py-2 px-3 text-right">{viewingCustomer.prescription.leftEye.cyl}</td>
+                        <td className="py-2 px-3 text-right">{viewingCustomer.prescription.leftEye.axis}°</td>
+                        <td className="py-2 px-3 text-right">{viewingCustomer.prescription.leftEye.add}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  {viewingCustomer.prescription.notes && (
+                    <div className="text-xs text-slate-600 pt-2 border-t border-slate-200">
+                      <span className="font-semibold text-slate-800">Optometrist Clinical Notes:</span>{' '}
+                      {viewingCustomer.prescription.notes}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-xs text-slate-500 text-center">
+                  No optical prescription recorded for this customer (Sunglasses / Ready-Made Glasses).
+                </div>
+              )}
+            </div>
+
+            <div className="px-5 py-3.5 bg-slate-100 border-t border-slate-200 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setViewingCustomer(null)}
+                className="px-4 py-2 rounded-lg text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
