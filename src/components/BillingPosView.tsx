@@ -4,8 +4,6 @@ import {
   Plus,
   Minus,
   Trash2,
-  UserPlus,
-  Eye,
   Check,
   Receipt,
   RotateCcw,
@@ -16,7 +14,6 @@ import {
   Customer,
   CartItem,
   EyewearCategory,
-  OpticalPrescription,
   PaymentMethod,
   OrderStatus,
   SalesInvoice,
@@ -44,15 +41,6 @@ const LENS_UPGRADE_OPTIONS = [
   { label: 'Photochromic Day/Night Transition', price: 2200 },
   { label: 'Digital Progressive High-Index 1.67', price: 3200 },
 ];
-
-const DEFAULT_RX: OpticalPrescription = {
-  rightEye: { sph: '-1.00', cyl: '-0.25', axis: '180', add: '+0.00' },
-  leftEye: { sph: '-1.25', cyl: '-0.25', axis: '175', add: '+0.00' },
-  pd: '63',
-  lensType: 'Single Vision Anti-Glare',
-  notes: '',
-  recordedAt: new Date().toISOString().slice(0, 10),
-};
 
 export const BillingPosView: React.FC<BillingPosViewProps> = ({
   products,
@@ -89,9 +77,7 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
   });
 
   // POS Page Tabs: 'catalog' (products table) vs 'bill' (the marked counter bill & checkout tab)
-  const [posTab, setPosTab] = useState<'catalog' | 'bill'>(() => {
-    return preselectedCustomerId ? 'bill' : 'catalog';
-  });
+  const [posTab, setPosTab] = useState<'catalog' | 'bill'>('catalog');
 
   // Check if active customer has a pending eye test order / lab fitting invoice
   const activeLabInvoice = useMemo(() => {
@@ -103,126 +89,25 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
     );
   }, [invoices, selectedCustomerId]);
 
-  const convertInvoiceItemsToCart = (inv: SalesInvoice): CartItem[] => {
-    if (!inv || !inv.items || inv.items.length === 0) return [];
-    return inv.items.map((item) => {
-      const matchingProd = products.find((p) => p.id === item.productId);
-      const prod: Product = matchingProd || {
-        id: item.productId || 'rx-lab-lens',
-        sku: item.sku || 'RX-LAB',
-        name: item.name || 'Rx Lab Order - Prescription Fitting',
-        category: (item.category as EyewearCategory) || 'Power Glasses',
-        brand: 'House Brand',
-        frameMaterial: 'Standard',
-        frameShape: 'Standard',
-        lensFeature: item.lensUpgradeLabel || 'Prescription Lenses',
-        price: item.unitPrice || Math.round(item.lineTotal / (item.quantity || 1)),
-        costPrice: 0,
-        gstRate: item.gstRate !== undefined ? item.gstRate : (settings.defaultGstRate || 12),
-        stock: 999,
-        reorderLevel: 0,
-        hsnCode: item.hsnCode || '90031100',
-        imageUrl: '',
-      };
-      return {
-        product: prod,
-        quantity: item.quantity || 1,
-        lensUpgradeLabel: item.lensUpgradeLabel || 'Standard Included Lens',
-        lensUpgradePrice: item.lensUpgradePrice || 0,
-        itemDiscount: item.discount || 0,
-      };
-    });
-  };
+  // Cart starts strictly empty — products are only added when user clicks Add from catalog!
+  const [cart, setCart] = useState<CartItem[]>([]);
 
-  const [cart, setCart] = useState<CartItem[]>(() => {
-    const targetCustId = preselectedCustomerId || customers[0]?.id;
-    if (targetCustId && invoices) {
-      const labInv = invoices.find(
-        (inv) => inv.customerId === targetCustId && inv.orderStatus === 'Lab Fitting'
-      );
-      if (labInv) {
-        return convertInvoiceItemsToCart(labInv);
-      }
-    }
-    return [];
-  });
-
-  // Optical Prescription (Rx) toggle & values
   const activeCustomer = customers.find((c) => c.id === selectedCustomerId);
-  const [attachRx, setAttachRx] = useState<boolean>(() => {
-    const targetCustId = preselectedCustomerId || customers[0]?.id;
-    const targetCust = customers.find((c) => c.id === targetCustId);
-    const labInv = invoices?.find(
-      (inv) => inv.customerId === targetCustId && inv.orderStatus === 'Lab Fitting'
-    );
-    return Boolean(labInv?.prescription || targetCust?.prescription);
-  });
-
-  const [rxData, setRxData] = useState<OpticalPrescription>(() => {
-    const targetCustId = preselectedCustomerId || customers[0]?.id;
-    const targetCust = customers.find((c) => c.id === targetCustId);
-    const labInv = invoices?.find(
-      (inv) => inv.customerId === targetCustId && inv.orderStatus === 'Lab Fitting'
-    );
-    return labInv?.prescription || targetCust?.prescription || DEFAULT_RX;
-  });
 
   // Payment & Order Status
   const [extraBillDiscount, setExtraBillDiscount] = useState<number>(0);
-
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(() => {
-    const targetCustId = preselectedCustomerId || customers[0]?.id;
-    const labInv = invoices?.find(
-      (inv) => inv.customerId === targetCustId && inv.orderStatus === 'Lab Fitting'
-    );
-    return labInv?.paymentMethod || 'UPI / QR';
-  });
-
-  const [orderStatus, setOrderStatus] = useState<OrderStatus>(() => {
-    const targetCustId = preselectedCustomerId || customers[0]?.id;
-    const labInv = invoices?.find(
-      (inv) => inv.customerId === targetCustId && inv.orderStatus === 'Lab Fitting'
-    );
-    return labInv?.orderStatus || 'Completed';
-  });
-
-  const [advancePaidInput, setAdvancePaidInput] = useState<string>(() => {
-    const targetCustId = preselectedCustomerId || customers[0]?.id;
-    const labInv = invoices?.find(
-      (inv) => inv.customerId === targetCustId && inv.orderStatus === 'Lab Fitting'
-    );
-    if (labInv && labInv.amountPaid !== undefined) {
-      return String(labInv.amountPaid);
-    }
-    return '';
-  });
-
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('UPI / QR');
+  const [orderStatus, setOrderStatus] = useState<OrderStatus>('Completed');
+  const [advancePaidInput, setAdvancePaidInput] = useState<string>('');
   const [staffName, setStaffName] = useState<string>('Suresh K.');
 
-  // Sync Rx & Order when customer switches
+  // Sync customer details when customer switches
   const handleSelectCustomer = (custId: string) => {
     setSelectedCustomerId(custId);
     const found = customers.find((c) => c.id === custId);
     if (found) {
       setCustomerName(found.name);
       setCustomerPhone(found.phone.replace(/\D/g, '').slice(-10));
-      if (found.prescription) {
-        setRxData(found.prescription);
-        setAttachRx(true);
-      }
-    }
-    const labInv = invoices?.find(
-      (inv) => inv.customerId === custId && inv.orderStatus === 'Lab Fitting'
-    );
-    if (labInv && labInv.items && labInv.items.length > 0) {
-      setCart(convertInvoiceItemsToCart(labInv));
-      setAdvancePaidInput(String(labInv.amountPaid));
-      setPaymentMethod(labInv.paymentMethod || 'UPI / QR');
-      setOrderStatus(labInv.orderStatus || 'Lab Fitting');
-      if (labInv.prescription) {
-        setRxData(labInv.prescription);
-        setAttachRx(true);
-      }
     }
   };
 
@@ -274,7 +159,6 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
     });
 
     if (product.category === 'Power Glasses') {
-      setAttachRx(true);
       setOrderStatus('Lab Fitting');
     }
   };
@@ -406,7 +290,7 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
           lineTotal:
             (c.product.price + c.lensUpgradePrice) * c.quantity - c.itemDiscount,
         })),
-        prescription: attachRx ? rxData : undefined,
+        prescription: activeCustomer?.prescription,
         subtotal: calculations.subtotal,
         totalDiscount: calculations.totalDiscount,
         cgstAmount: calculations.cgst,
@@ -424,7 +308,6 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
             name: finalCustomerName,
             phone: finalCustomerPhone,
             email: '',
-            prescription: attachRx ? rxData : undefined,
           }
         : undefined
     );
@@ -836,133 +719,7 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
               </div>
             )}
 
-            {/* 2. Optical Eye Prescription (OD / OS) Toggle & Matrix */}
-            <div className="space-y-3 pb-4 border-b border-slate-200">
-              <div className="flex items-center justify-between">
-                <button
-                  type="button"
-                  onClick={() => setAttachRx(!attachRx)}
-                  className="flex items-center gap-2 text-xs font-semibold text-slate-800 cursor-pointer"
-                >
-                  <div
-                    className={`w-4 h-4 rounded flex items-center justify-center border ${
-                      attachRx
-                        ? 'bg-slate-900 border-slate-900 text-white'
-                        : 'border-slate-300 bg-white'
-                    }`}
-                  >
-                    {attachRx && <Check className="w-3 h-3" />}
-                  </div>
-                  <Eye className="w-4 h-4 text-slate-600" />
-                  <span>Include Optical Prescription (OD / OS) on Invoice</span>
-                </button>
-                {attachRx && (
-                  <span className="text-[11px] font-mono text-slate-500">
-                    PD: {rxData.pd}mm
-                  </span>
-                )}
-              </div>
-
-              {attachRx && (
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-3">
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="col-span-2">
-                      <label className="block text-[11px] font-medium text-slate-500 mb-1">
-                        Prescribed Lens Type
-                      </label>
-                      <select
-                        value={rxData.lensType}
-                        onChange={(e) =>
-                          setRxData({
-                            ...rxData,
-                            lensType: e.target.value as OpticalPrescription['lensType'],
-                          })
-                        }
-                        className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-md"
-                      >
-                        <option value="Zero-Power Blue Cut">Zero-Power Blue Cut</option>
-                        <option value="Single Vision Anti-Glare">Single Vision Anti-Glare</option>
-                        <option value="Bifocal">Bifocal</option>
-                        <option value="Progressive High-Index">Progressive High-Index</option>
-                        <option value="Photochromic Transition">Photochromic Transition</option>
-                        <option value="Standard Tint">Standard Polarized / Tint</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-medium text-slate-500 mb-1">
-                        PD (mm)
-                      </label>
-                      <input
-                        type="text"
-                        value={rxData.pd}
-                        onChange={(e) => setRxData({ ...rxData, pd: e.target.value })}
-                        placeholder="63"
-                        className="w-full px-2.5 py-1.5 text-xs font-mono bg-white border border-slate-200 rounded-md text-right"
-                      />
-                    </div>
-                  </div>
-
-                  {/* OD / OS Diopter Grid */}
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs font-mono">
-                      <thead>
-                        <tr className="text-slate-500 border-b border-slate-200">
-                          <th className="py-1 text-left font-sans">Eye</th>
-                          <th className="py-1 text-center">SPH</th>
-                          <th className="py-1 text-center">CYL</th>
-                          <th className="py-1 text-center">AXIS</th>
-                          <th className="py-1 text-center">ADD</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-200/60">
-                        <tr>
-                          <td className="py-1.5 font-sans font-semibold text-slate-800 pr-2">
-                            OD (R)
-                          </td>
-                          {(['sph', 'cyl', 'axis', 'add'] as const).map((field) => (
-                            <td key={field} className="p-1">
-                              <input
-                                type="text"
-                                value={rxData.rightEye[field]}
-                                onChange={(e) =>
-                                  setRxData({
-                                    ...rxData,
-                                    rightEye: { ...rxData.rightEye, [field]: e.target.value },
-                                  })
-                                }
-                                placeholder={field === "axis" ? "0" : "0.00"} className="w-full px-1.5 py-1 text-center bg-white border border-slate-200 rounded text-xs font-mono"
-                              />
-                            </td>
-                          ))}
-                        </tr>
-                        <tr>
-                          <td className="py-1.5 font-sans font-semibold text-slate-800 pr-2">
-                            OS (L)
-                          </td>
-                          {(['sph', 'cyl', 'axis', 'add'] as const).map((field) => (
-                            <td key={field} className="p-1">
-                              <input
-                                type="text"
-                                value={rxData.leftEye[field]}
-                                onChange={(e) =>
-                                  setRxData({
-                                    ...rxData,
-                                    leftEye: { ...rxData.leftEye, [field]: e.target.value },
-                                  })
-                                }
-                                className="w-full px-1.5 py-1 text-center bg-white border border-slate-200 rounded text-xs font-mono"
-                              />
-                            </td>
-                          ))}
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* 3. Cart Line Items */}
+            {/* 2. Cart Line Items */}
             <div className="space-y-3 pb-4 border-b border-slate-200">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
@@ -1077,8 +834,8 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
                     min={0}
                     value={extraBillDiscount || ''}
                     onChange={(e) => setExtraBillDiscount(Math.max(0, Number(e.target.value) || 0))}
-                    placeholder="0"
-                    className="w-full px-3 py-2 text-sm font-mono bg-slate-50 border border-slate-200 rounded-lg"
+                    placeholder="000"
+                    className="w-full px-3 py-2 text-sm font-mono bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-slate-900"
                   />
                 </div>
                 <div>
@@ -1091,8 +848,8 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
                     max={calculations.grandTotal}
                     value={advancePaidInput}
                     onChange={(e) => setAdvancePaidInput(e.target.value)}
-                    placeholder={`${calculations.grandTotal} (Full)`}
-                    className="w-full px-3 py-2 text-sm font-mono bg-slate-50 border border-slate-200 rounded-lg"
+                    placeholder="000"
+                    className="w-full px-3 py-2 text-sm font-mono bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-slate-900"
                   />
                 </div>
               </div>
