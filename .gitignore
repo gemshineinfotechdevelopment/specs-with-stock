@@ -8,6 +8,7 @@ coverage/
 
 # Production Build
 dist/
+dist-server/
 build/
 
 # Misc
