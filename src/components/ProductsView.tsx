@@ -126,9 +126,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
               <tr className="border-b border-slate-200 text-xs font-semibold text-slate-500 bg-slate-50/70">
                 <th className="py-3.5 px-4">Product / SKU</th>
                 <th className="py-3.5 px-4">Category & Material</th>
-                <th className="py-3.5 px-4">Lens Specification</th>
                 <th className="py-3.5 px-4 text-right">Retail Price</th>
-                <th className="py-3.5 px-4 text-right">GST / HSN</th>
                 <th className="py-3.5 px-4 text-center">Stock Level</th>
                 <th className="py-3.5 px-4 text-right">Actions</th>
               </tr>
@@ -136,7 +134,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
             <tbody className="divide-y divide-slate-200 text-sm">
               {filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-16 text-center text-slate-400 text-xs">
+                  <td colSpan={5} className="py-16 text-center text-slate-400 text-xs">
                     <Glasses className="w-8 h-8 text-slate-300 mx-auto mb-2" />
                     No eyewear products found in catalog. Add new products in Stock Management.
                   </td>
@@ -177,16 +175,11 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                           {product.frameMaterial} · {product.frameShape}
                         </div>
                       </td>
-                      <td className="py-3.5 px-4 text-xs text-slate-600">
-                        {product.lensFeature}
-                      </td>
                       <td className="py-3.5 px-4 text-right font-mono">
                         <div className="font-semibold text-slate-900">{fmt(product.price)}</div>
-                        <div className="text-xs text-slate-400">Cost: {fmt(product.costPrice)}</div>
-                      </td>
-                      <td className="py-3.5 px-4 text-right font-mono text-xs text-slate-600">
-                        <div>{product.gstRate}% GST</div>
-                        <div className="text-slate-400">HSN {product.hsnCode}</div>
+                        {product.costPrice > 0 && (
+                          <div className="text-xs text-slate-400">Cost: {fmt(product.costPrice)}</div>
+                        )}
                       </td>
                       <td className="py-3.5 px-4 text-center">
                         <div className="flex flex-col items-center justify-center gap-1">
