@@ -26,6 +26,7 @@ import {
 interface BillingPosViewProps {
   products: Product[];
   customers: Customer[];
+  invoices?: SalesInvoice[];
   settings: StoreSettings;
   initialCategory?: EyewearCategory | 'All';
   preselectedCustomerId?: string | null;
@@ -56,6 +57,7 @@ const DEFAULT_RX: OpticalPrescription = {
 export const BillingPosView: React.FC<BillingPosViewProps> = ({
   products,
   customers,
+  invoices,
   settings,
   initialCategory = 'All',
   preselectedCustomerId,
@@ -66,7 +68,6 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
     initialCategory
   );
   const [searchQuery, setSearchQuery] = useState('');
-  const [cart, setCart] = useState<CartItem[]>([]);
 
   // Customer selection or quick walk-in creation
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>(
@@ -76,22 +77,114 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
   const [walkInName, setWalkInName] = useState('');
   const [walkInPhone, setWalkInPhone] = useState('');
 
+  // Check if active customer has a pending eye test order / lab fitting invoice
+  const activeLabInvoice = useMemo(() => {
+    if (!selectedCustomerId || selectedCustomerId === 'walk-in') return null;
+    return (
+      invoices?.find(
+        (inv) => inv.customerId === selectedCustomerId && inv.orderStatus === 'Lab Fitting'
+      ) || null
+    );
+  }, [invoices, selectedCustomerId]);
+
+  const convertInvoiceItemsToCart = (inv: SalesInvoice): CartItem[] => {
+    if (!inv || !inv.items || inv.items.length === 0) return [];
+    return inv.items.map((item) => {
+      const matchingProd = products.find((p) => p.id === item.productId);
+      const prod: Product = matchingProd || {
+        id: item.productId || 'rx-lab-lens',
+        sku: item.sku || 'RX-LAB',
+        name: item.name || 'Rx Lab Order - Prescription Fitting',
+        category: (item.category as EyewearCategory) || 'Power Glasses',
+        brand: 'House Brand',
+        frameMaterial: 'Standard',
+        frameShape: 'Standard',
+        lensFeature: item.lensUpgradeLabel || 'Prescription Lenses',
+        price: item.unitPrice || Math.round(item.lineTotal / (item.quantity || 1)),
+        costPrice: 0,
+        gstRate: item.gstRate !== undefined ? item.gstRate : (settings.defaultGstRate || 12),
+        stock: 999,
+        reorderLevel: 0,
+        hsnCode: item.hsnCode || '90031100',
+        imageUrl: '',
+      };
+      return {
+        product: prod,
+        quantity: item.quantity || 1,
+        lensUpgradeLabel: item.lensUpgradeLabel || 'Standard Included Lens',
+        lensUpgradePrice: item.lensUpgradePrice || 0,
+        itemDiscount: item.discount || 0,
+      };
+    });
+  };
+
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    const targetCustId = preselectedCustomerId || customers[0]?.id;
+    if (targetCustId && invoices) {
+      const labInv = invoices.find(
+        (inv) => inv.customerId === targetCustId && inv.orderStatus === 'Lab Fitting'
+      );
+      if (labInv) {
+        return convertInvoiceItemsToCart(labInv);
+      }
+    }
+    return [];
+  });
+
   // Optical Prescription (Rx) toggle & values
   const activeCustomer = customers.find((c) => c.id === selectedCustomerId);
-  const [attachRx, setAttachRx] = useState<boolean>(Boolean(activeCustomer?.prescription));
-  const [rxData, setRxData] = useState<OpticalPrescription>(
-    activeCustomer?.prescription || DEFAULT_RX
-  );
+  const [attachRx, setAttachRx] = useState<boolean>(() => {
+    const targetCustId = preselectedCustomerId || customers[0]?.id;
+    const targetCust = customers.find((c) => c.id === targetCustId);
+    const labInv = invoices?.find(
+      (inv) => inv.customerId === targetCustId && inv.orderStatus === 'Lab Fitting'
+    );
+    return Boolean(labInv?.prescription || targetCust?.prescription);
+  });
+
+  const [rxData, setRxData] = useState<OpticalPrescription>(() => {
+    const targetCustId = preselectedCustomerId || customers[0]?.id;
+    const targetCust = customers.find((c) => c.id === targetCustId);
+    const labInv = invoices?.find(
+      (inv) => inv.customerId === targetCustId && inv.orderStatus === 'Lab Fitting'
+    );
+    return labInv?.prescription || targetCust?.prescription || DEFAULT_RX;
+  });
 
   // Payment & Order Status
   const [extraBillDiscount, setExtraBillDiscount] = useState<number>(0);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('UPI / QR');
-  const [orderStatus, setOrderStatus] = useState<OrderStatus>('Completed');
-  const [advancePaidInput, setAdvancePaidInput] = useState<string>('');
+
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(() => {
+    const targetCustId = preselectedCustomerId || customers[0]?.id;
+    const labInv = invoices?.find(
+      (inv) => inv.customerId === targetCustId && inv.orderStatus === 'Lab Fitting'
+    );
+    return labInv?.paymentMethod || 'UPI / QR';
+  });
+
+  const [orderStatus, setOrderStatus] = useState<OrderStatus>(() => {
+    const targetCustId = preselectedCustomerId || customers[0]?.id;
+    const labInv = invoices?.find(
+      (inv) => inv.customerId === targetCustId && inv.orderStatus === 'Lab Fitting'
+    );
+    return labInv?.orderStatus || 'Completed';
+  });
+
+  const [advancePaidInput, setAdvancePaidInput] = useState<string>(() => {
+    const targetCustId = preselectedCustomerId || customers[0]?.id;
+    const labInv = invoices?.find(
+      (inv) => inv.customerId === targetCustId && inv.orderStatus === 'Lab Fitting'
+    );
+    if (labInv && labInv.amountPaid !== undefined) {
+      return String(labInv.amountPaid);
+    }
+    return '';
+  });
+
   const [staffName, setStaffName] = useState<string>('Suresh K.');
   const [mobileTab, setMobileTab] = useState<'catalog' | 'cart'>('catalog');
 
-  // Sync Rx when customer switches
+  // Sync Rx & Order when customer switches
   const handleSelectCustomer = (custId: string) => {
     setSelectedCustomerId(custId);
     setIsNewWalkIn(false);
@@ -99,6 +192,19 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
     if (found?.prescription) {
       setRxData(found.prescription);
       setAttachRx(true);
+    }
+    const labInv = invoices?.find(
+      (inv) => inv.customerId === custId && inv.orderStatus === 'Lab Fitting'
+    );
+    if (labInv && labInv.items && labInv.items.length > 0) {
+      setCart(convertInvoiceItemsToCart(labInv));
+      setAdvancePaidInput(String(labInv.amountPaid));
+      setPaymentMethod(labInv.paymentMethod || 'UPI / QR');
+      setOrderStatus(labInv.orderStatus || 'Lab Fitting');
+      if (labInv.prescription) {
+        setRxData(labInv.prescription);
+        setAttachRx(true);
+      }
     }
   };
 
@@ -638,6 +744,37 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
             )}
           </div>
 
+          {/* Loaded Eye Test Order Banner */}
+          {activeLabInvoice && (
+            <div className="p-3.5 bg-amber-50/90 border border-amber-300 rounded-xl space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Receipt className="w-4 h-4 text-amber-700" />
+                  <span className="text-xs font-bold text-amber-950">
+                    Loaded Eye Test Order ({activeLabInvoice.invoiceNumber})
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-200 text-amber-950 font-bold uppercase">
+                  {activeLabInvoice.orderStatus}
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-xs pt-1.5 border-t border-amber-200">
+                <div>
+                  <span className="text-[10px] text-amber-700 font-medium block">Total Bill</span>
+                  <span className="font-mono font-bold text-slate-900">{fmt(activeLabInvoice.grandTotal)}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-amber-700 font-medium block">Advance Paid</span>
+                  <span className="font-mono font-bold text-emerald-700">{fmt(activeLabInvoice.amountPaid)}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-amber-700 font-medium block">Balance to Collect</span>
+                  <span className="font-mono font-bold text-rose-700">{fmt(activeLabInvoice.balanceDue)}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* 2. Optical Eye Prescription (OD / OS) Toggle & Matrix */}
           <div className="space-y-3 pb-4 border-b border-slate-200">
             <div className="flex items-center justify-between">
@@ -946,12 +1083,32 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
               <span>Grand Total</span>
               <span className="font-mono">{fmt(calculations.grandTotal)}</span>
             </div>
-            {balanceDue > 0 && (
-              <div className="flex justify-between text-xs font-semibold text-amber-700 pt-1">
-                <span>Advance: {fmt(parsedAdvance)}</span>
-                <span className="font-mono">Balance on Pickup: {fmt(balanceDue)}</span>
+
+            {/* Advance Paid & Balance Due Breakdown */}
+            <div className="p-3 bg-amber-50/90 border border-amber-300/80 rounded-xl space-y-1.5 mt-2">
+              <div className="flex justify-between text-xs text-slate-700 font-medium">
+                <span>Advance Paid:</span>
+                <span className="font-mono font-bold text-emerald-700">{fmt(parsedAdvance)}</span>
               </div>
-            )}
+              <div className="flex justify-between items-center text-sm font-bold text-slate-900 pt-1 border-t border-amber-200">
+                <span className="text-amber-950">Balance Due to Pay:</span>
+                <span className="font-mono text-base font-extrabold text-rose-700">
+                  {fmt(balanceDue)}
+                </span>
+              </div>
+              {balanceDue > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAdvancePaidInput(String(calculations.grandTotal));
+                    setOrderStatus('Completed');
+                  }}
+                  className="w-full mt-1.5 py-1.5 px-2 text-[11px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors cursor-pointer text-center"
+                >
+                  Collect Full Balance ({fmt(balanceDue)}) Now
+                </button>
+              )}
+            </div>
 
             <button
               type="button"

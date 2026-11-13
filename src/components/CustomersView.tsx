@@ -165,6 +165,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
           email: email.trim(),
           age: Number(age) || undefined,
           prescription: rxPayload,
+          isNewPatient: true,
         },
         parsedAmount,
         chosenDate,
@@ -237,35 +238,56 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
             </p>
           </div>
         ) : (
-          filteredCustomers.map((customer) => (
-          <div
-            key={customer.id}
-            className="bg-white border border-slate-200 rounded-xl p-5 flex flex-col justify-between space-y-4"
-          >
-            <div className="space-y-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h3 className="text-base font-bold text-slate-900">
-                    {customer.name}
-                    {customer.age ? (
-                      <span className="text-xs font-normal text-slate-500 ml-2">
-                        · {customer.age} yrs
-                      </span>
-                    ) : null}
-                  </h3>
-                  <div className="text-xs font-mono text-slate-600 mt-0.5">
-                    {customer.phone} {customer.email ? `· ${customer.email}` : ''}
+          filteredCustomers.map((customer) => {
+            const pendingInvoice = invoices?.find(
+              (inv: any) =>
+                inv.customerId === customer.id &&
+                inv.orderStatus === 'Lab Fitting'
+            );
+            const canLoadToPos = Boolean(customer.isNewPatient || pendingInvoice);
+
+            return (
+              <div
+                key={customer.id}
+                className="bg-white border border-slate-200 rounded-xl p-5 flex flex-col justify-between space-y-4"
+              >
+                <div className="space-y-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900">
+                        {customer.name}
+                        {customer.age ? (
+                          <span className="text-xs font-normal text-slate-500 ml-2">
+                            · {customer.age} yrs
+                          </span>
+                        ) : null}
+                      </h3>
+                      <div className="text-xs font-mono text-slate-600 mt-0.5">
+                        {customer.phone} {customer.email ? `· ${customer.email}` : ''}
+                      </div>
+                    </div>
+                    <div className="text-right font-mono">
+                      <div className="text-sm font-bold text-slate-900">
+                        {fmt(customer.totalSpent)}
+                      </div>
+                      <div className="text-xs text-slate-500">
+                        {customer.ordersCount} orders · Last: {customer.lastVisit}
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="text-right font-mono">
-                  <div className="text-sm font-bold text-slate-900">
-                    {fmt(customer.totalSpent)}
-                  </div>
-                  <div className="text-xs text-slate-500">
-                    {customer.ordersCount} orders · Last: {customer.lastVisit}
-                  </div>
-                </div>
-              </div>
+
+                  {/* Eye Test Order Pending Status Banner */}
+                  {pendingInvoice && (
+                    <div className="flex items-center justify-between px-3.5 py-2 bg-amber-50/80 border border-amber-300 rounded-lg text-xs">
+                      <div className="flex items-center gap-1.5 font-semibold text-amber-900">
+                        <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                        <span>Eye Test Order Pending POS ({pendingInvoice.invoiceNumber})</span>
+                      </div>
+                      <div className="font-mono text-amber-950 font-bold">
+                        Balance Due: {fmt(pendingInvoice.balanceDue)}
+                      </div>
+                    </div>
+                  )}
 
               {/* Prescription Table */}
               {customer.prescription ? (
@@ -350,17 +372,20 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                 <Eye className="w-3.5 h-3.5" />
                 Update Eye Rx
               </button>
-              <button
-                type="button"
-                onClick={() => onBillCustomerInPos(customer.id)}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800 transition-colors cursor-pointer"
-              >
-                <ShoppingBag className="w-3.5 h-3.5" />
-                Load into Billing POS
-              </button>
+              {canLoadToPos && (
+                <button
+                  type="button"
+                  onClick={() => onBillCustomerInPos(customer.id)}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800 transition-colors cursor-pointer shadow-xs"
+                >
+                  <ShoppingBag className="w-3.5 h-3.5" />
+                  Load into Billing POS
+                </button>
+              )}
             </div>
           </div>
-        )))}
+        );
+      }))}
       </div>
 
       {/* Add Customer / Update Rx Modal */}

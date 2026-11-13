@@ -67,6 +67,7 @@ export interface Customer {
   totalSpent: number;
   ordersCount: number;
   prescription?: OpticalPrescription;
+  isNewPatient?: boolean;
 }
 
 export type PaymentMethod = 'UPI / QR' | 'Card' | 'Cash' | 'Split Payment';

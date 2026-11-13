@@ -303,17 +303,21 @@ export default function App() {
       setCustomers((prev) => [createdCustomer, ...prev]);
     } else {
       setCustomers((prev) =>
-        prev.map((c) =>
-          c.id === invoiceData.customerId
-            ? {
-                ...c,
-                lastVisit: todayIso,
-                totalSpent: c.totalSpent + invoiceData.grandTotal,
-                ordersCount: existingLabInv ? c.ordersCount : c.ordersCount + 1,
-                prescription: invoiceData.prescription || c.prescription,
-              }
-            : c
-        )
+        prev.map((c) => {
+          if (c.id !== invoiceData.customerId) return c;
+          const updatedCust: Customer = {
+            ...c,
+            lastVisit: todayIso,
+            totalSpent: existingLabInv
+              ? Math.max(0, c.totalSpent - existingLabInv.grandTotal + invoiceData.grandTotal)
+              : c.totalSpent + invoiceData.grandTotal,
+            ordersCount: existingLabInv ? c.ordersCount : c.ordersCount + 1,
+            prescription: invoiceData.prescription || c.prescription,
+            isNewPatient: false,
+          };
+          api.updateCustomer(updatedCust).catch(console.warn);
+          return updatedCust;
+        })
       );
     }
 
@@ -461,6 +465,7 @@ export default function App() {
       lastVisit: todayIso,
       totalSpent: enteredAmount,
       ordersCount: orderQty,
+      isNewPatient: true,
     };
     setCustomers((prev) => [cust, ...prev]);
     api.createCustomer(cust).catch(console.warn);
@@ -762,6 +767,7 @@ export default function App() {
               key={`${posCategoryFilter}-${posCustomerId || 'default'}`}
               products={products}
               customers={customers}
+              invoices={invoices}
               settings={settings}
               initialCategory={posCategoryFilter}
               preselectedCustomerId={posCustomerId}
