@@ -335,6 +335,12 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                           customer.phone.replace(/\D/g, '').slice(-10))
                   ) || [];
 
+                  const custGrossTotal = custInvoices.reduce(
+                    (sum: number, inv: any) =>
+                      sum + (inv.subtotal || 0) + (inv.cgstAmount || 0) + (inv.sgstAmount || 0),
+                    0
+                  );
+
                   const rowItems = getExpandedCustomerItems(custInvoices, customer);
                   const productNames =
                     rowItems.length > 0
@@ -397,7 +403,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
 
                       {/* 5. Price */}
                       <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-900 whitespace-nowrap">
-                        <div>{fmt(customer.totalSpent)}</div>
+                        <div>{fmt(custGrossTotal > 0 ? custGrossTotal : customer.totalSpent)}</div>
                         <div className="flex items-center justify-end gap-1.5 mt-0.5">
                           {custInvoices[0]?.paymentMethod && (
                             <span className="text-[10px] font-semibold text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded font-sans">
@@ -787,25 +793,28 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
           (sum: number, inv: any) => sum + (inv.cgstAmount || 0) + (inv.sgstAmount || 0),
           0
         );
+        const totalGrossAmount = totalBaseAmount + totalTaxAmount;
         const totalStaffDiscount = viewCustomerInvoices.reduce(
           (sum: number, inv: any) => sum + (inv.totalDiscount || 0),
           0
         );
+        const finalTotalAmount = Math.max(0, totalGrossAmount - totalStaffDiscount);
+
         const primaryPaymentMethod =
           viewCustomerInvoices[0]?.paymentMethod || 'UPI / QR';
         const totalItemsQty = viewPurchasedItems.reduce(
           (sum: number, it: any) => sum + (it.quantity || 1),
           0
         );
-        const totalCalculatedBill = viewCustomerInvoices.length > 0
-          ? viewCustomerInvoices.reduce((sum: number, inv: any) => sum + (inv.grandTotal || 0), 0)
-          : (totalBaseAmount + totalTaxAmount - totalStaffDiscount || viewingCustomer.totalSpent || 0);
         const actualPaidAmount = viewCustomerInvoices.length > 0
           ? viewCustomerInvoices.reduce(
               (sum: number, inv: any) => sum + (inv.amountPaid !== undefined ? inv.amountPaid : inv.grandTotal || 0),
               0
             )
           : (viewingCustomer.totalSpent || 0);
+
+        const displayTopAmount =
+          totalGrossAmount > 0 ? totalGrossAmount : (actualPaidAmount || viewingCustomer.totalSpent || 0);
 
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
@@ -846,8 +855,13 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                     </div>
                     <div className="text-right font-mono">
                       <div className="text-base font-bold text-slate-900">
-                        {fmt(actualPaidAmount)}
+                        {fmt(displayTopAmount)}
                       </div>
+                      {totalStaffDiscount > 0 && (
+                        <div className="text-[11px] font-semibold text-emerald-700">
+                          Final: {fmt(finalTotalAmount)}
+                        </div>
+                      )}
                       <div className="text-xs text-slate-500">
                         {Math.max(viewPurchasedItems.length, viewingCustomer.ordersCount || 1)} orders · Last Visit: {viewingCustomer.lastVisit}
                       </div>
@@ -915,51 +929,53 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                           {viewPurchasedItems.length} products ({totalItemsQty} pcs)
                         </span>
                       </div>
-                      <div className="flex justify-between text-slate-600">
-                        <span>Product Subtotal:</span>
+                      <div className="flex justify-between text-slate-700">
+                        <span>Product Subtotal Amount:</span>
                         <span className="font-mono font-semibold">{fmt(totalBaseAmount)}</span>
                       </div>
-                      {totalTaxAmount > 0 && (
-                        <div className="flex justify-between text-blue-700">
-                          <span>GST Amount (CGST + SGST):</span>
-                          <span className="font-mono font-semibold">+{fmt(totalTaxAmount)}</span>
-                        </div>
-                      )}
+                      <div className="flex justify-between text-blue-700">
+                        <span>GST Amount (CGST + SGST):</span>
+                        <span className="font-mono font-semibold">
+                          {totalTaxAmount > 0 ? `+${fmt(totalTaxAmount)}` : fmt(0)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-slate-900 font-bold py-0.5 border-t border-slate-200/80">
+                        <span>Total Amount:</span>
+                        <span className="font-mono font-bold text-slate-900">
+                          {fmt(totalGrossAmount)}
+                        </span>
+                      </div>
                       {totalStaffDiscount > 0 && (
                         <div className="flex justify-between text-emerald-700 font-medium">
-                          <span>Staff Discount:</span>
+                          <span>Staff Discount Amount:</span>
                           <span className="font-mono font-bold">-{fmt(totalStaffDiscount)}</span>
                         </div>
                       )}
-                      <div className="flex justify-between text-slate-700 items-center">
+                      <div className="flex justify-between text-slate-900 font-extrabold text-sm pt-1.5 pb-0.5 border-t border-slate-200">
+                        <span>Final Total Amount:</span>
+                        <span className="font-mono text-base font-extrabold text-slate-900">
+                          {fmt(finalTotalAmount)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-slate-700 items-center pt-1 border-t border-slate-100">
                         <span>Payment Mode:</span>
                         <span className="font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-900 border border-slate-200 font-mono text-[11px]">
                           {primaryPaymentMethod}
                         </span>
                       </div>
 
-                      {/* Total Amount = Subtotal + GST (- Staff Discount) */}
-                      <div className="flex justify-between text-slate-900 font-bold text-sm pt-2 border-t border-slate-200/80">
-                        <span>Total Amount:</span>
-                        <span className="font-mono text-base font-extrabold text-slate-900">
-                          {fmt(totalCalculatedBill)}
-                        </span>
-                      </div>
-
-                      {viewPendingInvoice ? (
+                      {viewPendingInvoice && viewPendingInvoice.balanceDue > 0 ? (
                         <>
                           <div className="flex justify-between text-emerald-700 font-semibold text-xs pt-0.5">
                             <span>Advance Paid Amount:</span>
                             <span className="font-mono font-bold">{fmt(actualPaidAmount)}</span>
                           </div>
-                          {viewPendingInvoice.balanceDue > 0 && (
-                            <div className="flex justify-between text-rose-700 font-bold text-xs">
-                              <span>Balance to Collect:</span>
-                              <span className="font-mono font-extrabold">
-                                {fmt(viewPendingInvoice.balanceDue)}
-                              </span>
-                            </div>
-                          )}
+                          <div className="flex justify-between text-rose-700 font-bold text-xs">
+                            <span>Balance to Collect:</span>
+                            <span className="font-mono font-extrabold">
+                              {fmt(viewPendingInvoice.balanceDue)}
+                            </span>
+                          </div>
                         </>
                       ) : (
                         <div className="flex justify-between text-emerald-700 font-semibold text-xs pt-0.5">

@@ -88,10 +88,9 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
     localStorage.setItem('optic_pos_tab', posTab);
   }, [posTab]);
 
-  // Dynamic GST Percentage Input (Editable in Active Optical Counter Bill)
-  const [gstPercentageInput, setGstPercentageInput] = useState<string>(() => {
-    return String(settings.defaultGstRate || 12);
-  });
+  // Dynamic GST Percentage Input (Editable in Active Optical Counter Bill, defaults to 0)
+  const [gstPercentageInput, setGstPercentageInput] = useState<string>('0');
+  const [customerError, setCustomerError] = useState<string>('');
 
   // Check if active customer has a pending eye test order / lab fitting invoice
   const activeLabInvoice = useMemo(() => {
@@ -302,14 +301,23 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
   const handleCheckout = () => {
     if (cart.length === 0) return;
 
-    const finalCustomerName = customerName.trim() || 'Walk-In Customer';
+    const trimmedName = customerName.trim();
     const cleanDigits = customerPhone.replace(/\D/g, '').slice(0, 10);
-    const finalCustomerPhone =
-      cleanDigits.length === 10
-        ? `+91 ${cleanDigits}`
-        : cleanDigits
-        ? `+91 ${cleanDigits}`
-        : '+91 90000 00000';
+
+    if (!trimmedName || cleanDigits.length !== 10) {
+      if (!trimmedName && cleanDigits.length !== 10) {
+        setCustomerError('Customer Name and 10-digit Mobile Number are required to generate invoice.');
+      } else if (!trimmedName) {
+        setCustomerError('Customer Name is required to generate invoice.');
+      } else {
+        setCustomerError('A valid 10-digit Mobile Number is required to generate invoice.');
+      }
+      return;
+    }
+
+    setCustomerError('');
+    const finalCustomerName = trimmedName;
+    const finalCustomerPhone = `+91 ${cleanDigits}`;
 
     const isExisting =
       selectedCustomerId &&
@@ -691,22 +699,36 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
                 )}
               </div>
 
+              {customerError && (
+                <div className="p-2.5 bg-rose-50 border border-rose-300 rounded-lg text-rose-700 text-xs font-semibold flex items-center gap-2">
+                  <span>⚠️ {customerError}</span>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Customer Name *
+                    Customer Name <span className="text-rose-600 font-bold">*</span>
                   </label>
                   <input
                     type="text"
+                    required
                     value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
+                    onChange={(e) => {
+                      setCustomerName(e.target.value);
+                      if (customerError) setCustomerError('');
+                    }}
                     placeholder="Enter customer name (e.g. Ramesh)"
-                    className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-slate-900"
+                    className={`w-full px-3 py-2 text-sm bg-white border rounded-lg focus:outline-none focus:border-slate-900 ${
+                      customerError && !customerName.trim()
+                        ? 'border-rose-400 bg-rose-50/50 text-rose-900'
+                        : 'border-slate-200'
+                    }`}
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Mobile Number *
+                    Mobile Number (10 Digits) <span className="text-rose-600 font-bold">*</span>
                   </label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 font-mono text-xs text-slate-500 font-semibold select-none">
@@ -717,8 +739,12 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
                       inputMode="numeric"
                       pattern="[0-9]{10}"
                       maxLength={10}
+                      required
                       value={customerPhone}
-                      onChange={(e) => setCustomerPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                      onChange={(e) => {
+                        setCustomerPhone(e.target.value.replace(/\D/g, '').slice(0, 10));
+                        if (customerError) setCustomerError('');
+                      }}
                       onKeyDown={(e) => {
                         if (['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return;
                         if (!/^[0-9]$/.test(e.key)) {
@@ -726,7 +752,11 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
                         }
                       }}
                       placeholder="98401 23456"
-                      className="w-full pl-11 pr-3 py-2 text-sm font-mono bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-slate-900"
+                      className={`w-full pl-11 pr-3 py-2 text-sm font-mono bg-white border rounded-lg focus:outline-none focus:border-slate-900 ${
+                        customerError && customerPhone.replace(/\D/g, '').slice(0, 10).length !== 10
+                          ? 'border-rose-400 bg-rose-50/50 text-rose-900'
+                          : 'border-slate-200'
+                      }`}
                     />
                   </div>
                 </div>
@@ -989,7 +1019,7 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
                       step="any"
                       value={gstPercentageInput}
                       onChange={(e) => setGstPercentageInput(e.target.value)}
-                      placeholder="12"
+                      placeholder="0"
                       className="w-12 text-center font-mono font-bold text-xs text-slate-900 focus:outline-none"
                     />
                     <span className="text-[11px] font-bold text-slate-500 ml-0.5">%</span>
@@ -1022,6 +1052,12 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
                       {fmt(Math.max(0, calculations.grandTotal - activeLabInvoice.amountPaid))}
                     </span>
                   </div>
+                </div>
+              )}
+
+              {customerError && (
+                <div className="p-2.5 bg-rose-50 border border-rose-300 rounded-lg text-rose-700 text-xs font-semibold flex items-center gap-2 mt-2">
+                  <span>⚠️ {customerError}</span>
                 </div>
               )}
 
