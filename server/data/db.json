@@ -17,11 +17,20 @@
       "price": 2800,
       "reorderLevel": 5,
       "sku": "OPT-101",
-      "stock": 9,
+      "stock": 8,
       "updatedAt": "2026-11-14T05:17:07.592Z"
     }
   ],
   "customers": [
+    {
+      "name": "heamanth",
+      "phone": "+91 6987456332",
+      "email": "",
+      "id": "cust-1794637630802",
+      "lastVisit": "2026-11-14",
+      "totalSpent": 3000,
+      "ordersCount": 1
+    },
     {
       "name": "Walk-In Customer",
       "phone": "+91 90000 00000",
@@ -75,6 +84,40 @@
     }
   ],
   "invoices": [
+    {
+      "customerId": "cust-1794637630802",
+      "customerName": "heamanth",
+      "customerPhone": "+91 6987456332",
+      "items": [
+        {
+          "productId": "prd-1794549882245",
+          "sku": "OPT-101",
+          "name": "sample",
+          "category": "Sunglasses",
+          "hsnCode": "90031100",
+          "quantity": 1,
+          "unitPrice": 2800,
+          "lensUpgradeLabel": "Standard Included Lens",
+          "lensUpgradePrice": 0,
+          "discount": 0,
+          "gstRate": 10,
+          "lineTotal": 2800
+        }
+      ],
+      "subtotal": 2800,
+      "totalDiscount": 80,
+      "cgstAmount": 140,
+      "sgstAmount": 140,
+      "grandTotal": 3000,
+      "amountPaid": 3000,
+      "balanceDue": 0,
+      "paymentMethod": "UPI / QR",
+      "orderStatus": "Completed",
+      "staffName": "Suresh K.",
+      "id": "inv-1794637630804",
+      "invoiceNumber": "1044",
+      "createdAt": "14/11/2026, 11:57 am"
+    },
     {
       "customerId": "cust-1794636254103",
       "customerName": "Walk-In Customer",
