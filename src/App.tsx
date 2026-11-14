@@ -828,6 +828,8 @@ export default function App() {
               products={products}
               settings={settings}
               initialFilter={productsInitialFilter}
+              onUpdateProduct={handleUpdateProduct}
+              onDeleteProduct={handleDeleteProduct}
             />
           )}
 

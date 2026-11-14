@@ -1,6 +1,7 @@
 import { Printer, X, CheckCircle2, Glasses, FileText, Receipt } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { SalesInvoice, StoreSettings, OrderStatus } from '../types';
+import { formatInvoiceDate } from './InvoicesView';
 
 interface InvoiceModalProps {
   invoice: SalesInvoice | null;
@@ -200,7 +201,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
                 </div>
                 <div className="flex justify-between">
                   <span>DATE:</span>
-                  <span>{invoice.createdAt}</span>
+                  <span>{formatInvoiceDate(invoice.createdAt)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>CUSTOMER:</span>
@@ -342,7 +343,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   </div>
                   <div className="text-xs text-slate-500">
                     Date & Time:{' '}
-                    <span className="font-mono text-slate-800">{invoice.createdAt}</span>
+                    <span className="font-mono text-slate-800">{formatInvoiceDate(invoice.createdAt)}</span>
                   </div>
                   <div className="text-xs text-slate-500">
                     Billed By: <span className="text-slate-800 font-medium">{invoice.staffName}</span>

@@ -18,27 +18,37 @@
       "reorderLevel": 5,
       "sku": "OPT-101",
       "stock": 8,
-      "updatedAt": "2026-11-14T05:17:07.592Z"
+      "updatedAt": "2026-11-14T06:27:11.228Z"
     }
   ],
   "customers": [
     {
-      "name": "heamanth",
-      "phone": "+91 6987456332",
+      "id": "cust-1794651665214",
+      "name": "loku",
+      "phone": "+91 9987777456",
       "email": "",
-      "id": "cust-1794637630802",
-      "lastVisit": "2026-11-14",
-      "totalSpent": 3000,
-      "ordersCount": 1
-    },
-    {
-      "name": "Walk-In Customer",
-      "phone": "+91 90000 00000",
-      "email": "",
-      "id": "cust-1794636254103",
-      "lastVisit": "2026-11-14",
-      "totalSpent": 3136,
-      "ordersCount": 1
+      "age": 28,
+      "prescription": {
+        "rightEye": {
+          "sph": ".25",
+          "cyl": ".25",
+          "axis": "20",
+          "add": "+0.00"
+        },
+        "leftEye": {
+          "sph": "1",
+          "cyl": ".45",
+          "axis": "10",
+          "add": "+0.00"
+        },
+        "pd": "63",
+        "lensType": "Bifocal",
+        "notes": "",
+        "recordedAt": "2026-11-14"
+      },
+      "totalSpent": 15550,
+      "ordersCount": 2,
+      "lastVisit": "2026-11-14"
     },
     {
       "id": "cust-1794633427173",
@@ -79,90 +89,96 @@
         "recordedAt": "2026-11-14"
       },
       "totalSpent": 4936,
-      "updatedAt": "2026-11-14T05:24:21.975Z",
+      "updatedAt": "2026-11-14T06:03:49.135Z",
       "isNewPatient": false
+    },
+    {
+      "id": "cust-1794636254103",
+      "createdAt": "2026-11-14T06:04:14.278Z",
+      "email": "",
+      "lastVisit": "2026-11-14",
+      "name": "Walk-In Customer",
+      "ordersCount": 1,
+      "phone": "+91 90000 00000",
+      "totalSpent": 3136,
+      "updatedAt": "2026-11-14T06:04:14.278Z"
+    },
+    {
+      "id": "cust-1794637630802",
+      "createdAt": "2026-11-14T06:27:11.285Z",
+      "email": "",
+      "lastVisit": "2026-11-14",
+      "name": "heamanth",
+      "ordersCount": 1,
+      "phone": "+91 6987456332",
+      "totalSpent": 3000,
+      "updatedAt": "2026-11-14T06:27:11.285Z"
     }
   ],
   "invoices": [
     {
-      "customerId": "cust-1794637630802",
-      "customerName": "heamanth",
-      "customerPhone": "+91 6987456332",
+      "id": "inv-1794651665223",
+      "invoiceNumber": "1045",
+      "customerId": "cust-1794651665214",
+      "customerName": "loku",
+      "customerPhone": "+91 9987777456",
       "items": [
         {
-          "productId": "prd-1794549882245",
-          "sku": "OPT-101",
-          "name": "sample",
-          "category": "Sunglasses",
+          "productId": "rx-lab-lens-1",
+          "sku": "RX-LAB-1",
+          "name": "Rx Lab Order - Bifocal Fitting",
+          "category": "Power Glasses",
           "hsnCode": "90031100",
           "quantity": 1,
-          "unitPrice": 2800,
-          "lensUpgradeLabel": "Standard Included Lens",
+          "unitPrice": 15050,
+          "lensUpgradeLabel": "Bifocal",
           "lensUpgradePrice": 0,
           "discount": 0,
-          "gstRate": 10,
-          "lineTotal": 2800
+          "gstRate": 0,
+          "lineTotal": 15050
         }
       ],
-      "subtotal": 2800,
-      "totalDiscount": 80,
-      "cgstAmount": 140,
-      "sgstAmount": 140,
-      "grandTotal": 3000,
-      "amountPaid": 3000,
-      "balanceDue": 0,
-      "paymentMethod": "UPI / QR",
-      "orderStatus": "Completed",
-      "staffName": "Suresh K.",
-      "id": "inv-1794637630804",
-      "invoiceNumber": "1044",
-      "createdAt": "14/11/2026, 11:57 am"
-    },
-    {
-      "customerId": "cust-1794636254103",
-      "customerName": "Walk-In Customer",
-      "customerPhone": "+91 90000 00000",
-      "items": [
-        {
-          "productId": "prd-1794549882245",
-          "sku": "OPT-101",
-          "name": "sample",
-          "category": "Sunglasses",
-          "hsnCode": "90031100",
-          "quantity": 1,
-          "unitPrice": 2800,
-          "lensUpgradeLabel": "Standard Included Lens",
-          "lensUpgradePrice": 0,
-          "discount": 0,
-          "gstRate": 12,
-          "lineTotal": 2800
-        }
-      ],
-      "subtotal": 2800,
+      "subtotal": 15050,
       "totalDiscount": 0,
-      "cgstAmount": 168,
-      "sgstAmount": 168,
-      "grandTotal": 3136,
-      "amountPaid": 3136,
-      "balanceDue": 0,
+      "cgstAmount": 0,
+      "sgstAmount": 0,
+      "grandTotal": 15050,
+      "amountPaid": 500,
+      "balanceDue": 14550,
       "paymentMethod": "UPI / QR",
-      "orderStatus": "Completed",
-      "staffName": "Suresh K.",
-      "id": "inv-1794636254104",
-      "invoiceNumber": "1043",
-      "createdAt": "14/11/2026, 11:34 am"
+      "orderStatus": "Lab Fitting",
+      "prescription": {
+        "rightEye": {
+          "sph": ".25",
+          "cyl": ".25",
+          "axis": "20",
+          "add": "+0.00"
+        },
+        "leftEye": {
+          "sph": "1",
+          "cyl": ".45",
+          "axis": "10",
+          "add": "+0.00"
+        },
+        "pd": "63",
+        "lensType": "Bifocal",
+        "notes": "",
+        "recordedAt": "2026-11-14"
+      },
+      "staffName": "Optometrist / Lab",
+      "createdAt": "14/11/2026, 03:51 pm"
     },
     {
       "id": "inv-1794633427177",
       "amountPaid": 3000,
       "balanceDue": 0,
       "cgstAmount": 168,
-      "createdAt": "Sat Nov 14 2026 10:47:07 GMT+0530 (India Standard Time)",
+      "createdAt": "14/11/2026, 10:47 am",
       "customerId": "cust-1794633427173",
       "customerName": "kumatrran",
       "customerPhone": "+91 9874563333",
       "grandTotal": 3000,
-      "invoiceNumber": "LUM-2026-1041",
+      "invoiceNumber": "1041",
       "items": [
         {
           "productId": "prd-1794549882245",
@@ -192,12 +208,12 @@
       "amountPaid": 3136,
       "balanceDue": 0,
       "cgstAmount": 168,
-      "createdAt": "Sat Nov 14 2026 10:54:21 GMT+0530 (India Standard Time)",
+      "createdAt": "14/11/2026, 10:54 am",
       "customerId": "cust-1794633861742",
       "customerName": "vijay",
       "customerPhone": "+91 6547896555",
       "grandTotal": 3136,
-      "invoiceNumber": "LUM-2026-1042",
+      "invoiceNumber": "1042",
       "items": [
         {
           "productId": "prd-1794549882245",
@@ -238,7 +254,77 @@
       "staffName": "Suresh K.",
       "subtotal": 2800,
       "totalDiscount": 0,
-      "updatedAt": "2026-11-14T05:24:21.830Z"
+      "updatedAt": "2026-11-14T06:03:49.125Z"
+    },
+    {
+      "id": "inv-1794636254104",
+      "amountPaid": 3136,
+      "balanceDue": 0,
+      "cgstAmount": 168,
+      "createdAt": "14/11/2026, 11:34 am",
+      "customerId": "cust-1794636254103",
+      "customerName": "Walk-In Customer",
+      "customerPhone": "+91 90000 00000",
+      "grandTotal": 3136,
+      "invoiceNumber": "1043",
+      "items": [
+        {
+          "productId": "prd-1794549882245",
+          "sku": "OPT-101",
+          "name": "sample",
+          "category": "Sunglasses",
+          "hsnCode": "90031100",
+          "quantity": 1,
+          "unitPrice": 2800,
+          "lensUpgradeLabel": "Standard Included Lens",
+          "lensUpgradePrice": 0,
+          "discount": 0,
+          "gstRate": 12,
+          "lineTotal": 2800
+        }
+      ],
+      "orderStatus": "Completed",
+      "paymentMethod": "UPI / QR",
+      "sgstAmount": 168,
+      "staffName": "Suresh K.",
+      "subtotal": 2800,
+      "totalDiscount": 0,
+      "updatedAt": "2026-11-14T06:04:14.167Z"
+    },
+    {
+      "id": "inv-1794637630804",
+      "amountPaid": 3000,
+      "balanceDue": 0,
+      "cgstAmount": 140,
+      "createdAt": "14/11/2026, 11:57 am",
+      "customerId": "cust-1794637630802",
+      "customerName": "heamanth",
+      "customerPhone": "+91 6987456332",
+      "grandTotal": 3000,
+      "invoiceNumber": "1044",
+      "items": [
+        {
+          "productId": "prd-1794549882245",
+          "sku": "OPT-101",
+          "name": "sample",
+          "category": "Sunglasses",
+          "hsnCode": "90031100",
+          "quantity": 1,
+          "unitPrice": 2800,
+          "lensUpgradeLabel": "Standard Included Lens",
+          "lensUpgradePrice": 0,
+          "discount": 0,
+          "gstRate": 10,
+          "lineTotal": 2800
+        }
+      ],
+      "orderStatus": "Completed",
+      "paymentMethod": "UPI / QR",
+      "sgstAmount": 140,
+      "staffName": "Suresh K.",
+      "subtotal": 2800,
+      "totalDiscount": 80,
+      "updatedAt": "2026-11-14T06:27:10.825Z"
     }
   ],
   "settings": {
@@ -248,7 +334,7 @@
     "phone": "9874563210",
     "email": "care@luminaoptic.in",
     "address": "No. 42, Usman Road, T. Nagar, Chennai, Tamil Nadu 600017",
-    "invoicePrefix": "LUM-2026-",
+    "invoicePrefix": "",
     "currencySymbol": "₹",
     "defaultGstRate": 12,
     "defaultLabDays": 3,

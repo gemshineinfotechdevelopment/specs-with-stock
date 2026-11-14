@@ -10,6 +10,30 @@ interface InvoicesViewProps {
   onDeleteInvoice?: (invoiceId: string) => void;
 }
 
+export const formatInvoiceDate = (dateStr: string): string => {
+  if (!dateStr) return '';
+  const clean = dateStr
+    .replace(/\s*GMT[+-]\d{4}.*$/i, '')
+    .replace(/\s*\(.*?\)/g, '')
+    .trim();
+
+  if (dateStr.includes('GMT') || dateStr.includes('T') || dateStr.includes('Z')) {
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) {
+      return (
+        d.toLocaleDateString('en-GB') +
+        ', ' +
+        d.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true,
+        }).toLowerCase()
+      );
+    }
+  }
+  return clean;
+};
+
 export const InvoicesView: React.FC<InvoicesViewProps> = ({
   invoices,
   settings,
@@ -115,7 +139,7 @@ export const InvoicesView: React.FC<InvoicesViewProps> = ({
                     <div className="font-mono font-semibold text-slate-900">
                       {inv.invoiceNumber}
                     </div>
-                    <div className="text-xs font-mono text-slate-500">{inv.createdAt}</div>
+                    <div className="text-xs font-mono text-slate-500">{formatInvoiceDate(inv.createdAt)}</div>
                   </td>
                   <td className="py-3.5 px-4">
                     <div className="font-medium text-slate-900">{inv.customerName}</div>
