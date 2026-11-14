@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Search,
   Plus,
@@ -78,7 +78,19 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
 
   // POS Page Tabs: 'catalog' (products table) vs 'bill' (the marked counter bill & checkout tab)
   const [posTab, setPosTab] = useState<'catalog' | 'bill'>(() => {
-    return preselectedCustomerId ? 'bill' : 'catalog';
+    if (preselectedCustomerId) return 'bill';
+    const saved = localStorage.getItem('optic_pos_tab');
+    if (saved === 'catalog' || saved === 'bill') return saved;
+    return 'catalog';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('optic_pos_tab', posTab);
+  }, [posTab]);
+
+  // Dynamic GST Percentage Input (Editable in Active Optical Counter Bill)
+  const [gstPercentageInput, setGstPercentageInput] = useState<string>(() => {
+    return String(settings.defaultGstRate || 12);
   });
 
   // Check if active customer has a pending eye test order / lab fitting invoice
@@ -245,19 +257,21 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
   const calculations = useMemo(() => {
     let subtotal = 0;
     let itemLevelDiscounts = 0;
-    let totalGst = 0;
 
     cart.forEach((item) => {
       if (!item || !item.product) return;
       const unitCombined = item.product.price + item.lensUpgradePrice;
       const grossLine = unitCombined * item.quantity;
-      const netLine = Math.max(0, grossLine - item.itemDiscount);
       subtotal += grossLine;
       itemLevelDiscounts += item.itemDiscount;
-      totalGst += (netLine * item.product.gstRate) / 100;
     });
 
-    // GST is strictly calculated on products & lenses and does NOT change when Staff Discount is applied
+    const netTaxable = Math.max(0, subtotal - itemLevelDiscounts);
+    const parsedRate = parseFloat(gstPercentageInput);
+    const effectiveGstRate = !isNaN(parsedRate) && parsedRate >= 0 ? parsedRate : 0;
+    const totalGst = (netTaxable * effectiveGstRate) / 100;
+
+    // GST is calculated dynamically from the percentage entered by the user
     const totalGstRounded = Math.round(totalGst);
     const cgst = Math.round(totalGstRounded / 2);
     const sgst = totalGstRounded - cgst;
@@ -265,7 +279,7 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
     const totalDiscount = itemLevelDiscounts + extraBillDiscount;
 
     // Staff Discount is subtracted directly from the Grand Total (Subtotal + GST - Staff Discount)
-    const netBeforeStaffDiscount = Math.max(0, subtotal - itemLevelDiscounts) + cgst + sgst;
+    const netBeforeStaffDiscount = netTaxable + cgst + sgst;
     const grandTotal = Math.max(0, Math.round(netBeforeStaffDiscount - extraBillDiscount));
 
     return {
@@ -276,8 +290,9 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
       cgst,
       sgst,
       grandTotal,
+      gstRate: effectiveGstRate,
     };
-  }, [cart, extraBillDiscount]);
+  }, [cart, extraBillDiscount, gstPercentageInput]);
 
   const fmt = (val: number) =>
     `${settings.currencySymbol}${val.toLocaleString('en-IN', {
@@ -317,7 +332,7 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
           lensUpgradeLabel: c.lensUpgradeLabel,
           lensUpgradePrice: c.lensUpgradePrice,
           discount: c.itemDiscount,
-          gstRate: c.product.gstRate,
+          gstRate: calculations.gstRate,
           lineTotal:
             (c.product.price + c.lensUpgradePrice) * c.quantity - c.itemDiscount,
         })),
@@ -773,7 +788,6 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
                         <th className="py-2 px-3 text-right">SPH</th>
                         <th className="py-2 px-3 text-right">CYL</th>
                         <th className="py-2 px-3 text-right">AXIS</th>
-                        <th className="py-2 px-3 text-right">ADD</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-blue-100 text-slate-800">
@@ -790,9 +804,6 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
                         <td className="py-2 px-3 text-right">
                           {activePrescription.rightEye.axis}°
                         </td>
-                        <td className="py-2 px-3 text-right">
-                          {activePrescription.rightEye.add}
-                        </td>
                       </tr>
                       <tr>
                         <td className="py-2 px-3 font-sans font-bold text-blue-950">
@@ -806,9 +817,6 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
                         </td>
                         <td className="py-2 px-3 text-right">
                           {activePrescription.leftEye.axis}°
-                        </td>
-                        <td className="py-2 px-3 text-right">
-                          {activePrescription.leftEye.add}
                         </td>
                       </tr>
                     </tbody>
@@ -970,8 +978,23 @@ export const BillingPosView: React.FC<BillingPosViewProps> = ({
                   <span className="font-mono">-{fmt(calculations.itemLevelDiscounts)}</span>
                 </div>
               )}
-              <div className="flex justify-between text-slate-500 text-xs">
-                <span>GST (CGST + SGST)</span>
+              <div className="flex items-center justify-between text-slate-600 text-xs">
+                <div className="flex items-center gap-2">
+                  <span>GST (CGST + SGST)</span>
+                  <div className="inline-flex items-center bg-white border border-slate-300 rounded px-1.5 py-0.5 shadow-2xs">
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step="any"
+                      value={gstPercentageInput}
+                      onChange={(e) => setGstPercentageInput(e.target.value)}
+                      placeholder="12"
+                      className="w-12 text-center font-mono font-bold text-xs text-slate-900 focus:outline-none"
+                    />
+                    <span className="text-[11px] font-bold text-slate-500 ml-0.5">%</span>
+                  </div>
+                </div>
                 <span className="font-mono">
                   {fmt(calculations.cgst + calculations.sgst)}
                 </span>

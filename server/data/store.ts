@@ -367,7 +367,18 @@ class DataStore {
     invoiceData: Omit<SalesInvoice, 'id' | 'invoiceNumber' | 'createdAt'> & { id?: string; invoiceNumber?: string; createdAt?: string },
     newCustomerData?: Omit<Customer, 'id' | 'totalSpent' | 'ordersCount' | 'lastVisit'>
   ): Promise<SalesInvoice> {
-    const nextNumber = 1040 + this.data.invoices.length + 1;
+    let maxInvNum = 1000;
+    for (const inv of this.data.invoices) {
+      if (!inv || !inv.invoiceNumber) continue;
+      const match = inv.invoiceNumber.match(/(\d+)/g);
+      if (match && match.length > 0) {
+        const lastDigits = parseInt(match[match.length - 1], 10);
+        if (!isNaN(lastDigits) && lastDigits >= 1000) {
+          if (lastDigits > maxInvNum) maxInvNum = lastDigits;
+        }
+      }
+    }
+    const nextInvNumber = String(maxInvNum + 1);
     const nowStr = new Date().toLocaleString('en-IN', {
       year: 'numeric',
       month: '2-digit',
@@ -379,7 +390,7 @@ class DataStore {
     const newInvoice: SalesInvoice = {
       ...invoiceData,
       id: invoiceData.id || `inv-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      invoiceNumber: invoiceData.invoiceNumber || `${this.data.settings.invoicePrefix}${nextNumber}`,
+      invoiceNumber: invoiceData.invoiceNumber || nextInvNumber,
       createdAt: invoiceData.createdAt || nowStr,
     };
 

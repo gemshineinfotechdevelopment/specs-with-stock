@@ -59,7 +59,7 @@ export const InvoicesView: React.FC<InvoicesViewProps> = ({
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by invoice number (LUM-2026-...), customer name, phone, or frame..."
+            placeholder="Search by invoice number (e.g. 1001, 1002...), customer name, phone, or frame..."
             className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-slate-900"
           />
         </div>

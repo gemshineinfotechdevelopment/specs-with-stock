@@ -54,7 +54,35 @@ try {
 } catch {}
 
 export default function App() {
-  const [activeNav, setActiveNav] = useState<NavSection>('dashboard');
+  const [activeNav, setActiveNav] = useState<NavSection>(() => {
+    const validNavs: NavSection[] = [
+      'dashboard',
+      'pos',
+      'products',
+      'customers',
+      'invoices',
+      'stock',
+      'reports',
+      'settings',
+    ];
+    const hash = window.location.hash.replace(/^#\/?/, '') as NavSection;
+    if (hash && validNavs.includes(hash)) {
+      return hash;
+    }
+    const saved = localStorage.getItem('optic_active_nav') as NavSection;
+    if (saved && validNavs.includes(saved)) {
+      return saved;
+    }
+    return 'dashboard';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('optic_active_nav', activeNav);
+    if (window.location.hash !== `#${activeNav}`) {
+      window.location.hash = activeNav;
+    }
+  }, [activeNav]);
+
   const [posCategoryFilter, setPosCategoryFilter] = useState<EyewearCategory | 'All'>('All');
   const [posCustomerId, setPosCustomerId] = useState<string | null>(null);
   const [productsInitialFilter, setProductsInitialFilter] = useState<'all' | 'low'>('all');
@@ -209,6 +237,21 @@ export default function App() {
   };
 
   // Complete POS Sale -> Decrement Stock, Save or Update Invoice, Update Customer Spend
+  const getNextInvoiceNumber = (invList: SalesInvoice[]): string => {
+    let maxNum = 1000;
+    for (const inv of invList) {
+      if (!inv || !inv.invoiceNumber) continue;
+      const match = inv.invoiceNumber.match(/(\d+)/g);
+      if (match && match.length > 0) {
+        const lastDigits = parseInt(match[match.length - 1], 10);
+        if (!isNaN(lastDigits) && lastDigits >= 1000) {
+          if (lastDigits > maxNum) maxNum = lastDigits;
+        }
+      }
+    }
+    return String(maxNum + 1);
+  };
+
   const handleCompleteSale = (
     invoiceData: Omit<SalesInvoice, 'id' | 'invoiceNumber' | 'createdAt'>,
     newCustomerData?: Omit<Customer, 'id' | 'totalSpent' | 'ordersCount' | 'lastVisit'>
@@ -261,11 +304,11 @@ export default function App() {
       api.updateInvoice(existingLabInv.id, finalInvoice).catch(console.warn);
       api.updateInvoiceStatus(existingLabInv.id, 'Completed', true).catch(console.warn);
     } else {
-      const nextNumber = 1040 + invoices.length + 1;
+      const nextInvNum = getNextInvoiceNumber(invoices);
       finalInvoice = {
         ...invoiceData,
         id: `inv-${Date.now()}`,
-        invoiceNumber: `${settings.invoicePrefix}${nextNumber}`,
+        invoiceNumber: nextInvNum,
         createdAt: nowStr,
         orderStatus: 'Completed',
         amountPaid: invoiceData.amountPaid ?? invoiceData.grandTotal,
@@ -468,7 +511,7 @@ export default function App() {
       ...newCust,
       id: custId,
       lastVisit: todayIso,
-      totalSpent: enteredAmount,
+      totalSpent: enteredAdvance > 0 ? enteredAdvance : enteredAmount,
       ordersCount: orderQty,
       isNewPatient: true,
     };
@@ -478,14 +521,9 @@ export default function App() {
     // 2. Automatically create Sales Invoice with 'Lab Fitting' order status and save to backend database
     if (newCust.prescription || enteredAmount > 0) {
       const rxLensName = newCust.prescription?.lensType || 'Single Vision Anti-Glare';
-      const nextInvNum = `${settings.invoicePrefix}${1040 + invoices.length + 1}`;
-      const gstRate = settings.defaultGstRate || 12;
-      const subtotal = Math.round(enteredAmount / (1 + gstRate / 100));
-      const totalTax = enteredAmount - subtotal;
-      const cgst = Math.round(totalTax / 2);
-      const sgst = totalTax - cgst;
+      const nextInvNum = getNextInvoiceNumber(invoices);
+      const unitPrice = Math.round(enteredAmount / orderQty);
 
-      const unitSubtotal = Math.round(subtotal / orderQty);
       const items = Array.from({ length: orderQty }, (_, i) => ({
         productId: `rx-lab-lens-${i + 1}`,
         sku: `RX-LAB-${i + 1}`,
@@ -496,12 +534,12 @@ export default function App() {
         category: 'Power Glasses' as const,
         hsnCode: '90031100',
         quantity: 1,
-        unitPrice: unitSubtotal,
+        unitPrice: unitPrice,
         lensUpgradeLabel: rxLensName,
         lensUpgradePrice: 0,
         discount: 0,
-        gstRate: gstRate,
-        lineTotal: unitSubtotal,
+        gstRate: 0,
+        lineTotal: unitPrice,
       }));
 
       const labInvoice: SalesInvoice = {
@@ -512,10 +550,10 @@ export default function App() {
         customerName: cust.name,
         customerPhone: cust.phone,
         items: items,
-        subtotal: subtotal,
+        subtotal: enteredAmount,
         totalDiscount: 0,
-        cgstAmount: cgst,
-        sgstAmount: sgst,
+        cgstAmount: 0,
+        sgstAmount: 0,
         grandTotal: enteredAmount,
         amountPaid: enteredAdvance,
         balanceDue: balanceDue,

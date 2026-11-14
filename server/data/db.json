@@ -17,12 +17,139 @@
       "price": 2800,
       "reorderLevel": 5,
       "sku": "OPT-101",
-      "stock": 11,
-      "updatedAt": "2026-11-13T06:40:54.571Z"
+      "stock": 10,
+      "updatedAt": "2026-11-14T05:17:07.592Z"
     }
   ],
-  "customers": [],
-  "invoices": [],
+  "customers": [
+    {
+      "id": "cust-1794633427173",
+      "createdAt": "2026-11-14T05:17:07.643Z",
+      "email": "",
+      "lastVisit": "2026-11-14",
+      "name": "kumatrran",
+      "ordersCount": 1,
+      "phone": "+91 9874563333",
+      "totalSpent": 3000,
+      "updatedAt": "2026-11-14T05:17:07.643Z"
+    },
+    {
+      "id": "cust-1794633861742",
+      "age": 28,
+      "createdAt": "2026-11-14T05:24:21.805Z",
+      "email": "",
+      "lastVisit": "2026-11-14",
+      "name": "vijay",
+      "ordersCount": 1,
+      "phone": "+91 6547896555",
+      "prescription": {
+        "rightEye": {
+          "sph": ".25",
+          "cyl": ".25",
+          "axis": "20"
+        },
+        "leftEye": {
+          "sph": ".45",
+          "cyl": "0.00",
+          "axis": "10"
+        },
+        "pd": "63",
+        "lensType": "Single Vision Anti-Glare",
+        "notes": "",
+        "recordedAt": "2026-11-14"
+      },
+      "totalSpent": 500,
+      "updatedAt": "2026-11-14T05:24:21.975Z"
+    }
+  ],
+  "invoices": [
+    {
+      "id": "inv-1794633427177",
+      "amountPaid": 3000,
+      "balanceDue": 0,
+      "cgstAmount": 168,
+      "createdAt": "Sat Nov 14 2026 10:47:07 GMT+0530 (India Standard Time)",
+      "customerId": "cust-1794633427173",
+      "customerName": "kumatrran",
+      "customerPhone": "+91 9874563333",
+      "grandTotal": 3000,
+      "invoiceNumber": "1001",
+      "items": [
+        {
+          "productId": "prd-1794549882245",
+          "sku": "OPT-101",
+          "name": "sample",
+          "category": "Sunglasses",
+          "hsnCode": "90031100",
+          "quantity": 1,
+          "unitPrice": 2800,
+          "lensUpgradeLabel": "Standard Included Lens",
+          "lensUpgradePrice": 0,
+          "discount": 0,
+          "gstRate": 12,
+          "lineTotal": 2800
+        }
+      ],
+      "orderStatus": "Completed",
+      "paymentMethod": "UPI / QR",
+      "sgstAmount": 168,
+      "staffName": "Suresh K.",
+      "subtotal": 2800,
+      "totalDiscount": 136,
+      "updatedAt": "2026-11-14T05:17:07.487Z"
+    },
+    {
+      "id": "inv-1794633861744",
+      "amountPaid": 500,
+      "balanceDue": 1300,
+      "cgstAmount": 0,
+      "createdAt": "Sat Nov 14 2026 10:54:21 GMT+0530 (India Standard Time)",
+      "customerId": "cust-1794633861742",
+      "customerName": "vijay",
+      "customerPhone": "+91 6547896555",
+      "grandTotal": 1800,
+      "invoiceNumber": "1002",
+      "items": [
+        {
+          "productId": "rx-lab-lens-1",
+          "sku": "RX-LAB-1",
+          "name": "Rx Lab Order - Single Vision Anti-Glare Fitting",
+          "category": "Power Glasses",
+          "hsnCode": "90031100",
+          "quantity": 1,
+          "unitPrice": 1800,
+          "lensUpgradeLabel": "Single Vision Anti-Glare",
+          "lensUpgradePrice": 0,
+          "discount": 0,
+          "gstRate": 0,
+          "lineTotal": 1800
+        }
+      ],
+      "orderStatus": "Lab Fitting",
+      "paymentMethod": "UPI / QR",
+      "prescription": {
+        "rightEye": {
+          "sph": ".25",
+          "cyl": ".25",
+          "axis": "20"
+        },
+        "leftEye": {
+          "sph": ".45",
+          "cyl": "0.00",
+          "axis": "10"
+        },
+        "pd": "63",
+        "lensType": "Single Vision Anti-Glare",
+        "notes": "",
+        "recordedAt": "2026-11-14"
+      },
+      "sgstAmount": 0,
+      "staffName": "Optometrist / Lab",
+      "subtotal": 1800,
+      "totalDiscount": 0,
+      "updatedAt": "2026-11-14T05:24:21.830Z"
+    }
+  ],
   "settings": {
     "storeName": "Optic Vision Care",
     "branchName": "T. Nagar Flagship Showroom",

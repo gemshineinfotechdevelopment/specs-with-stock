@@ -135,17 +135,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </div>
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-              Tax Invoice Prefix
-            </label>
-            <input
-              type="text"
-              value={formData.invoicePrefix}
-              onChange={(e) => setFormData({ ...formData, invoicePrefix: e.target.value })}
-              className="w-full px-3.5 py-2 text-sm font-mono bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-slate-900"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
               Default Low Stock Alert Threshold (Units)
             </label>
             <input
@@ -157,24 +146,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 setFormData({
                   ...formData,
                   defaultLowStockThreshold: Math.max(1, Number(e.target.value) || 5),
-                })
-              }
-              className="w-full px-3.5 py-2 text-sm font-mono bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-slate-900"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-              Default GST Tax Rate (%)
-            </label>
-            <input
-              type="number"
-              min={0}
-              max={28}
-              value={formData.defaultGstRate}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  defaultGstRate: Number(e.target.value) || 12,
                 })
               }
               className="w-full px-3.5 py-2 text-sm font-mono bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-slate-900"
@@ -194,24 +165,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 })
               }
               placeholder="90031100"
-              className="w-full px-3.5 py-2 text-sm font-mono bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-slate-900"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-              Default Optical Lab Lead Time (Days)
-            </label>
-            <input
-              type="number"
-              min={1}
-              max={14}
-              value={formData.defaultLabDays}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  defaultLabDays: Number(e.target.value) || 2,
-                })
-              }
               className="w-full px-3.5 py-2 text-sm font-mono bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-slate-900"
             />
           </div>
