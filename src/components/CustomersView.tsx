@@ -797,6 +797,9 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
           (sum: number, it: any) => sum + (it.quantity || 1),
           0
         );
+        const totalCalculatedBill = viewCustomerInvoices.length > 0
+          ? viewCustomerInvoices.reduce((sum: number, inv: any) => sum + (inv.grandTotal || 0), 0)
+          : (totalBaseAmount + totalTaxAmount - totalStaffDiscount || viewingCustomer.totalSpent || 0);
         const actualPaidAmount = viewCustomerInvoices.length > 0
           ? viewCustomerInvoices.reduce(
               (sum: number, inv: any) => sum + (inv.amountPaid !== undefined ? inv.amountPaid : inv.grandTotal || 0),
@@ -866,63 +869,39 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                       )}
                     </div>
 
-                    <div className="space-y-2.5">
+                    <div className="space-y-2">
                       {viewPurchasedItems.map((item: any, idx: number) => {
                         const itemUnitPrice = item.unitPrice || item.lineTotal || 0;
                         const itemQty = item.quantity || 1;
-                        const itemGst = item.gstRate !== undefined ? item.gstRate : 12;
-                        const itemTax = Math.round((itemUnitPrice * itemGst) / 100);
-                        const itemMethod = item.paymentMethod || primaryPaymentMethod;
 
                         return (
                           <div
                             key={idx}
-                            className="p-3.5 bg-white border border-slate-200 rounded-xl space-y-2.5 shadow-2xs"
+                            className="p-3.5 bg-white border border-slate-200 rounded-xl flex items-center justify-between gap-3 shadow-2xs"
                           >
-                            <div className="flex items-start justify-between gap-3">
-                              <div>
-                                <div className="text-sm font-bold text-slate-900">
-                                  {item.name}
-                                </div>
-                                <div className="text-xs font-mono text-slate-500 mt-0.5 flex flex-wrap items-center gap-2">
-                                  {item.sku ? <span>SKU: {item.sku}</span> : null}
-                                  <span className="font-semibold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">
-                                    Qty: {itemQty}
-                                  </span>
-                                  {item.lensUpgradeLabel && item.lensUpgradeLabel !== 'Standard Included Lens' ? (
-                                    <span>· {item.lensUpgradeLabel}</span>
-                                  ) : null}
-                                </div>
+                            <div>
+                              <div className="text-sm font-bold text-slate-900">
+                                {item.name}
                               </div>
-                              <div className="text-right font-mono">
-                                <div className="text-sm font-extrabold text-slate-900">
-                                  {fmt(item.lineTotal || itemUnitPrice * itemQty)}
-                                </div>
+                              <div className="text-xs font-mono text-slate-500 mt-0.5 flex flex-wrap items-center gap-2">
+                                {item.sku ? <span>SKU: {item.sku}</span> : null}
+                                <span className="font-semibold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">
+                                  Qty: {itemQty}
+                                </span>
+                                {item.lensUpgradeLabel && item.lensUpgradeLabel !== 'Standard Included Lens' ? (
+                                  <span>· {item.lensUpgradeLabel}</span>
+                                ) : null}
                               </div>
                             </div>
-
-                            {/* Detailed breakdown: Product Amount, GST Rate, Staff Discount, Payment Method */}
-                            <div className="pt-2 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] font-mono">
-                              <div>
-                                <span className="text-slate-400 block text-[10px] uppercase font-sans font-medium">Product Amount</span>
-                                <span className="font-bold text-slate-800">{fmt(itemUnitPrice)}</span>
+                            <div className="text-right font-mono">
+                              <div className="text-sm font-extrabold text-slate-900">
+                                {fmt(item.lineTotal || itemUnitPrice * itemQty)}
                               </div>
-                              <div>
-                                <span className="text-slate-400 block text-[10px] uppercase font-sans font-medium">GST Rate</span>
-                                <span className="font-bold text-blue-700">{itemGst}% {itemTax > 0 ? `(+${fmt(itemTax)})` : ''}</span>
-                              </div>
-                              <div>
-                                <span className="text-slate-400 block text-[10px] uppercase font-sans font-medium">Staff Discount</span>
-                                <span className={`font-bold ${item.discount > 0 ? 'text-emerald-700' : 'text-slate-500'}`}>
-                                  {item.discount > 0 ? `-${fmt(item.discount)}` : '₹0'}
-                                </span>
-                              </div>
-                              <div>
-                                <span className="text-slate-400 block text-[10px] uppercase font-sans font-medium">Payment Mode</span>
-                                <span className="font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-800 inline-block font-sans">
-                                  {itemMethod}
-                                </span>
-                              </div>
+                              {item.discount > 0 && (
+                                <div className="text-[11px] text-emerald-600">
+                                  Discount: -{fmt(item.discount)}
+                                </div>
+                              )}
                             </div>
                           </div>
                         );
@@ -932,7 +911,9 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                     <div className="pt-3 border-t border-slate-200 space-y-1.5 text-xs">
                       <div className="flex justify-between text-slate-600">
                         <span>Total Products &amp; Quantity:</span>
-                        <span className="font-mono font-semibold">{viewPurchasedItems.length} products ({totalItemsQty} pcs)</span>
+                        <span className="font-mono font-semibold">
+                          {viewPurchasedItems.length} products ({totalItemsQty} pcs)
+                        </span>
                       </div>
                       <div className="flex justify-between text-slate-600">
                         <span>Product Subtotal:</span>
@@ -956,45 +937,36 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                           {primaryPaymentMethod}
                         </span>
                       </div>
+
+                      {/* Total Amount = Subtotal + GST (- Staff Discount) */}
                       <div className="flex justify-between text-slate-900 font-bold text-sm pt-2 border-t border-slate-200/80">
-                        <span>{viewPendingInvoice ? 'Advance Paid Amount:' : 'Total Paid Amount:'}</span>
-                        <span className="font-mono text-emerald-700">{fmt(actualPaidAmount)}</span>
+                        <span>Total Amount:</span>
+                        <span className="font-mono text-base font-extrabold text-slate-900">
+                          {fmt(totalCalculatedBill)}
+                        </span>
                       </div>
-                      {viewPendingInvoice && viewPendingInvoice.balanceDue > 0 && (
-                        <div className="flex justify-between text-rose-700 font-bold text-xs">
-                          <span>Balance to Collect:</span>
-                          <span className="font-mono">{fmt(viewPendingInvoice.balanceDue)}</span>
+
+                      {viewPendingInvoice ? (
+                        <>
+                          <div className="flex justify-between text-emerald-700 font-semibold text-xs pt-0.5">
+                            <span>Advance Paid Amount:</span>
+                            <span className="font-mono font-bold">{fmt(actualPaidAmount)}</span>
+                          </div>
+                          {viewPendingInvoice.balanceDue > 0 && (
+                            <div className="flex justify-between text-rose-700 font-bold text-xs">
+                              <span>Balance to Collect:</span>
+                              <span className="font-mono font-extrabold">
+                                {fmt(viewPendingInvoice.balanceDue)}
+                              </span>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="flex justify-between text-emerald-700 font-semibold text-xs pt-0.5">
+                          <span>Total Paid Amount:</span>
+                          <span className="font-mono font-bold">{fmt(actualPaidAmount)}</span>
                         </div>
                       )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Pending Eye Test Order details */}
-                {viewPendingInvoice && (
-                  <div className="p-4 bg-amber-50/90 border border-amber-300 rounded-xl space-y-2">
-                    <div className="flex items-center justify-between text-xs font-bold text-amber-950">
-                      <div className="flex items-center gap-1.5">
-                        <Receipt className="w-4 h-4 text-amber-700" />
-                        <span>Pending Eye Test Order #{viewPendingInvoice.invoiceNumber}</span>
-                      </div>
-                      <span className="px-2 py-0.5 rounded-full bg-amber-200 uppercase text-[10px]">
-                        {viewPendingInvoice.orderStatus}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 text-xs pt-1.5 border-t border-amber-200">
-                      <div>
-                        <span className="text-[10px] text-amber-800 block">Total Bill</span>
-                        <span className="font-mono font-bold text-slate-900">{fmt(viewPendingInvoice.grandTotal)}</span>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-amber-800 block">Advance Paid</span>
-                        <span className="font-mono font-bold text-emerald-700">{fmt(viewPendingInvoice.amountPaid)}</span>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-amber-800 block">Balance Due</span>
-                        <span className="font-mono font-extrabold text-rose-700">{fmt(viewPendingInvoice.balanceDue)}</span>
-                      </div>
                     </div>
                   </div>
                 )}
